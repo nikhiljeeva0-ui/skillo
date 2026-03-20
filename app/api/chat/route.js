@@ -1,61 +1,64 @@
+'use server';
+
+import { GoogleGenAI } from "@google/genai";
 import { getLearnerModel } from "@/lib/learnerModel";
 import { buildSystemPrompt } from "@/lib/buildSystemPrompt";
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY 
-});
 
 export async function POST(req) {
   try {
-    const { messages, userId } = await req.json();
-    
-    if (!messages || messages.length === 0) {
+    const body = await req.json();
+    const messages = body.messages || [];
+    const userId = body.userId || 'student_001';
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY is missing!');
       return Response.json(
-        { error: 'No messages provided' }, 
-        { status: 400 }
+        { error: 'API key not configured' },
+        { status: 500 }
       );
     }
 
-    const model = await getLearnerModel(
-      userId || 'student_001'
-    );
-    const systemPrompt = buildSystemPrompt(model);
+    const ai = new GoogleGenAI({ 
+      apiKey: process.env.GEMINI_API_KEY 
+    });
 
-    console.log('System prompt:', systemPrompt);
-    console.log('Messages count:', messages.length);
+    const learnerModel = await getLearnerModel(userId);
+    const systemPrompt = buildSystemPrompt(learnerModel);
 
-    const validMessages = messages.filter((m, i) => {
-      if (i === 0 && m.role === "assistant") return false;
+    console.log('userId:', userId);
+    console.log('GEMINI_KEY exists:', !!process.env.GEMINI_API_KEY);
+    console.log('messages:', messages.length);
+
+    const userMessages = messages.filter((m, i) => {
+      if (i === 0 && m.role === 'assistant') return false;
       return true;
     });
 
-    if (validMessages.length === 0) {
+    if (userMessages.length === 0) {
       return Response.json(
-        { error: 'No valid messages' }, 
+        { error: 'No messages' },
         { status: 400 }
       );
     }
 
     const lastMessage = 
-      validMessages[validMessages.length - 1].content;
-    
-    const history = validMessages
+      userMessages[userMessages.length - 1].content;
+
+    const history = userMessages
       .slice(0, -1)
       .map(m => ({
-        role: m.role === "assistant" ? "model" : "user",
+        role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }]
-      }));
-
-    if (history.length > 0 && history[0].role === "model") {
-      history.shift();
-    }
+      }))
+      .filter((_, i, arr) => {
+        if (i === 0 && arr[0].role === 'model') 
+          return false;
+        return true;
+      });
 
     const chat = ai.chats.create({
-      model: "gemini-2.5-flash",
-      config: {
-        systemInstruction: systemPrompt
-      },
+      model: 'gemini-2.0-flash',
+      system: systemPrompt,
       history: history
     });
 
@@ -63,10 +66,16 @@ export async function POST(req) {
       message: lastMessage 
     });
 
-    return new Response(response.text, { status: 200 });
+    console.log('Response received successfully');
+
+    return new Response(response.text, { 
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' }
+    });
 
   } catch (error) {
-    console.error('CHAT API ERROR:', error);
+    console.error('CHAT API ERROR:', error.message);
+    console.error('Full error:', error);
     return Response.json(
       { error: error.message }, 
       { status: 500 }
