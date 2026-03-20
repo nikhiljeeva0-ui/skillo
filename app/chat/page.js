@@ -174,9 +174,17 @@ export default function Chat() {
             </p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm font-medium text-[#c9a84c]">{studentInfo.name}</p>
-          <p className="text-xs text-gray-400">Class {studentInfo.grade}</p>
+        <div className="flex flex-col items-end gap-1.5">
+          <button 
+            onClick={() => window.open("/report", "_blank")}
+            className="text-xs flex items-center gap-1 bg-[#2a2824] px-2 py-1 rounded-md text-[#c9a84c] border border-[#3a3834] hover:bg-[#3a3834] transition-colors"
+          >
+            📋 Report
+          </button>
+          <div className="text-right">
+            <p className="text-sm font-medium text-[#c9a84c] leading-none mb-1">{studentInfo.name}</p>
+            <p className="text-xs text-gray-400 leading-none">Class {studentInfo.grade}</p>
+          </div>
         </div>
       </header>
 

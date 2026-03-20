@@ -1,60 +1,73 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getLearnerModel, saveLearnerModel, mergeInsights } from "@/lib/learnerModel";
+import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const ai = new GoogleGenAI({ 
+  apiKey: process.env.GEMINI_API_KEY 
+});
 
 export async function POST(req) {
   try {
     const { messages, userId } = await req.json();
+    
+    const model = await getLearnerModel(
+      userId || 'student_001'
+    );
 
-    if (!userId || !messages || messages.length === 0) {
-      return Response.json({ error: "Missing required fields" }, { status: 400 });
-    }
+    const conversation = messages
+      .map(m => `${m.role}: ${m.content}`)
+      .join('\n');
 
-    const model = await getLearnerModel(userId);
+    const extractionPrompt = `
+You are an education analyst.
+Analyze this tutoring conversation and extract insights.
+Respond ONLY in valid JSON. No markdown, no extra text.
 
-    const systemPrompt = `You are an education analyst. Analyze this tutoring conversation
-and extract learning insights. Respond ONLY in valid JSON.
-No extra text, no markdown, no explanation.
-
-Return exactly this structure:
 {
   "topics_discussed": [
     {
       "topic": "string",
-      "understood": true,
-      "errors": ["string"]
+      "understood": true or false,
+      "errors": ["error1", "error2"]
     }
   ],
   "explanation_worked": {
-    "analogy": true,
-    "step_by_step": true,
-    "formula": true
+    "analogy": true or false,
+    "step_by_step": true or false,
+    "formula": true or false
   },
-  "confidence_level": "low",
-  "needs_review": ["string"],
-  "session_quality": "progressing"
-}`;
+  "confidence_level": "low or medium or high",
+  "needs_review": ["topic1", "topic2"],
+  "session_quality": "struggling or progressing or strong"
+}
 
-    const geminiModel = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
-      systemInstruction: systemPrompt
+Conversation:
+${conversation}`;
+
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: extractionPrompt
     });
 
-    const conversationText = messages.map(m => `${m.role}: ${m.content}`).join("\n");
-    const result = await geminiModel.generateContent(conversationText);
-    const responseText = result.response.text();
-    
-    // Clean markdown if present
-    const cleanJSON = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
-    const insights = JSON.parse(cleanJSON);
+    let responseText = result.text;
+    responseText = responseText
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
 
+    const insights = JSON.parse(responseText);
     const updatedModel = mergeInsights(model, insights);
-    await saveLearnerModel(userId, updatedModel);
+    await saveLearnerModel(
+      userId || 'student_001', 
+      updatedModel
+    );
 
-    return Response.json({ success: true }, { status: 200 });
+    return Response.json({ success: true });
+
   } catch (error) {
-    console.error("Extraction API error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('EXTRACT ERROR:', error);
+    return Response.json(
+      { error: error.message }, 
+      { status: 500 }
+    );
   }
 }
