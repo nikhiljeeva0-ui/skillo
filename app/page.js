@@ -11,14 +11,14 @@ export default function Home() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)] flex items-center justify-center text-[var(--bg)] font-extrabold text-sm" style={{fontFamily:"var(--font-heading)"}}>S</div>
             <span className="text-lg font-bold" style={{fontFamily:"var(--font-heading)"}}>Skillo</span>
           </a>
-          <div className="hidden md:flex items-center gap-8 text-sm text-[var(--muted)]">
+          <div className="hidden md:flex items-center gap-8 text-sm text-[var(--muted)] hover-text-[var(--text)]">
             <a href="#features" className="hover:text-[var(--text)] transition-colors">Features</a>
             <a href="#how" className="hover:text-[var(--text)] transition-colors">How it works</a>
-            <a href="#schools" className="hover:text-[var(--text)] transition-colors">For Schools</a>
+            <a href="/teacher" className="hover:text-[var(--accent)] transition-colors font-semibold">Teacher Dashboard</a>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/login" className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors hidden md:block">Log in</a>
-            <a href="/onboard" className="bg-[var(--accent)] text-[var(--bg)] px-4 py-2 rounded-xl text-sm font-semibold hover:brightness-110 transition btn-tap">Get Started</a>
+            <a href="/teacher" className="text-[var(--accent)] font-semibold px-4 py-2 border border-[var(--accent)]/30 rounded-xl hover:bg-[var(--accent)]/10 text-sm hidden md:block transition-all btn-tap">Teacher Hub</a>
+            <a href="/onboard" className="bg-[var(--accent)] text-[var(--bg)] px-4 py-2 rounded-xl text-sm font-bold shadow-[0_4px_12px_rgba(245,166,35,0.3)] hover:shadow-none hover:translate-y-[2px] transition-all btn-tap">Student Start</a>
           </div>
         </div>
       </nav>
@@ -33,14 +33,14 @@ export default function Home() {
             </h1>
             <p className="text-lg text-[var(--muted)] leading-relaxed mb-8 max-w-lg">
               AI that <strong className="text-[var(--text)]">remembers how YOU learn</strong>.
-              Adapts every session. Free for every student.
+              Adapts every session. Built with a powerful teaching dashboard.
             </p>
             <div className="flex flex-wrap gap-3">
               <a href="/onboard" className="bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] px-7 py-3.5 rounded-xl font-bold text-base hover:brightness-110 transition btn-tap shadow-[0_4px_24px_rgba(245,166,35,0.25)]">
-                Start Learning Free →
+                Try AI Tutor Free →
               </a>
-              <a href="/register" className="border border-[var(--accent)] text-[var(--accent)] px-7 py-3.5 rounded-xl font-semibold text-base hover:bg-[var(--accent)]/10 transition btn-tap">
-                For Schools →
+              <a href="/teacher" className="border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] px-7 py-3.5 rounded-xl font-semibold text-base hover:border-[var(--accent)] transition-colors btn-tap">
+                Open Teacher Dashboard →
               </a>
             </div>
           </div>
@@ -160,8 +160,8 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <a href="/register" className="inline-block mt-8 bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] px-7 py-3.5 rounded-xl font-bold hover:brightness-110 transition btn-tap shadow-[0_4px_24px_rgba(245,166,35,0.2)]">
-                Register Your School →
+              <a href="/teacher" className="inline-block mt-8 bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] px-7 py-3.5 rounded-xl font-bold hover:brightness-110 transition btn-tap shadow-[0_4px_24px_rgba(245,166,35,0.2)]">
+                Access Teacher Dashboard →
               </a>
             </div>
             <div className="grid grid-cols-1 gap-3">
@@ -189,8 +189,8 @@ export default function Home() {
             <span className="text-xs text-[var(--muted)] ml-2">AI Tutor for every child</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-[var(--text)] transition-colors">About</a>
-            <a href="/register" className="hover:text-[var(--text)] transition-colors">For Schools</a>
+            <a href="https://github.com/nikhiljeeva0-ui" target="_blank" className="hover:text-[var(--text)] transition-colors">GitHub</a>
+            <a href="/teacher" className="hover:text-[var(--text)] transition-colors">Teacher Dashboard</a>
             <a href="#" className="hover:text-[var(--text)] transition-colors">Privacy</a>
           </div>
           <p>Made with ❤️ in India</p>
