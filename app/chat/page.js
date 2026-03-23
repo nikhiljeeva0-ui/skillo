@@ -78,30 +78,79 @@ export default function Chat() {
 
     const isHi = lang === "हिंदी" || lang === "hi";
     
-    let topicsMsg = "";
+    // Memory-aware welcome message
     const modelStr = localStorage.getItem("skillo_learner_model");
+    let initialMsg = isHi
+      ? `नमस्ते ${name}! मैं Skillo हूँ। आज से हम साथ पढ़ेंगे! आज क्या पढ़ना है? 😊`
+      : `Namaste ${name}! I'm Skillo. Let's start your learning journey! What shall we study today? 😊`;
+
     if (modelStr) {
       try {
         const model = JSON.parse(modelStr);
+        const sessions = model.sessionStats?.totalSessions || 0;
+        const streak = model.sessionStats?.streakDays || 0;
+        const lastSeen = model.sessionStats?.lastSeen;
+        const topics = model.subjects?.maths?.topics || {};
+        
+        const shakyTopics = Object.entries(topics)
+          .filter(([_, v]) => v.status === 'shaky')
+          .map(([k]) => k);
+
+        const daysSince = lastSeen ?
+          Math.floor((new Date() - new Date(lastSeen)) / (1000 * 60 * 60 * 24)) : null;
+
+        // New student
+        if (sessions === 0) {
+          initialMsg = isHi
+            ? `नमस्ते ${name}! मैं Skillo हूँ। आज से हम साथ पढ़ेंगे! आज क्या पढ़ना है? 😊`
+            : `Namaste ${name}! I'm Skillo. Let's start your learning journey! What shall we study today? 😊`;
+        }
+        // Returning after gap
+        else if (daysSince > 2) {
+          initialMsg = isHi
+            ? `वापस आए ${name}! ${daysSince} दिन बाद! ${shakyTopics.length > 0
+                ? `पिछली बार ${shakyTopics[0]} में थोड़ी problem थी। आज उसे fix करें? 💪`
+                : 'आज क्या पढ़ना है?'}`
+            : `Welcome back ${name}! ${daysSince} days later! ${shakyTopics.length > 0
+                ? `Last time you struggled with ${shakyTopics[0]}. Want to fix that today? 💪`
+                : 'What shall we study today?'}`;
+        }
+        // Streak message
+        else if (streak >= 3) {
+          initialMsg = isHi
+            ? `शाबाश ${name}! 🔥 ${streak} दिन streak! आज भी पढ़ने आए — great habit! आज क्या पढ़ना है?`
+            : `Amazing ${name}! 🔥 ${streak} day streak! Great habit! What shall we study today?`;
+        }
+        // Default returning student
+        else if (sessions > 0) {
+          initialMsg = isHi
+            ? `नमस्ते ${name}! ${shakyTopics.length > 0
+                ? `आज ${shakyTopics[0]} practice करें? 📚`
+                : 'आज क्या पढ़ना है? 😊'}`
+            : `Namaste ${name}! ${shakyTopics.length > 0
+                ? `Shall we practice ${shakyTopics[0]} today? 📚`
+                : 'What shall we study today? 😊'}`;
+        }
+
+        // Append spaced repetition topics
         const { getTopicsForToday } = require("@/lib/spacedRepetition");
-        const topics = getTopicsForToday(model);
-        if (topics.length > 0) {
+        const reviewTopics = getTopicsForToday(model);
+        if (reviewTopics.length > 0) {
           if (isHi) {
-            topicsMsg = `\n\n📚 आज review करने के लिए:\n${topics.map(t => `- ${t}`).join("\n")}\nक्या इनसे शुरू करें?`;
+            initialMsg += `\n\n📚 आज review करने के लिए:\n${reviewTopics.map(t => `- ${t}`).join("\n")}\nक्या इनसे शुरू करें?`;
           } else {
-            topicsMsg = `\n\n📚 Topics to review today:\n${topics.map(t => `- ${t}`).join("\n")}\nShall we start with these?`;
+            initialMsg += `\n\n📚 Topics to review today:\n${reviewTopics.map(t => `- ${t}`).join("\n")}\nShall we start with these?`;
           }
         }
-      } catch(e) {}
+      } catch(e) {
+        console.error("Memory load error:", e);
+      }
     }
-
-    const initialMsg = isHi
-      ? `नमस्ते ${name}! मैं Skillo हूँ, तुम्हारा personal tutor। आज क्या पढ़ना है? 😊${topicsMsg}`
-      : `Namaste ${name}! I'm Skillo, your personal tutor. What shall we study today? 😊${topicsMsg}`;
 
     setMessages([{ role: "assistant", content: initialMsg }]);
     setPageLoading(false);
   }, [router]);
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
