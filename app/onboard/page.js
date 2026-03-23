@@ -2,143 +2,76 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Send } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/learnerModel";
-
-const BOT_DELAY = 600;
 
 export default function OnboardChat() {
   const router = useRouter();
-  const [messages, setMessages] = useState([]);
   const [stepIndex, setStepIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
   const [inputText, setInputText] = useState("");
-  const messagesEndRef = useRef(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const inputRef = useRef(null);
 
   const [answers, setAnswers] = useState({
-    name: "",
-    grade: "",
-    board: "",
-    language: "",
-    schoolType: "",
-    instCheck: "",
-    instID: "",
-    institution_name: "",
-    goal: ""
+    name: "", grade: "", board: "", language: "",
+    schoolType: "", instCheck: "", instID: "",
+    institution_name: "", goal: ""
   });
 
   const steps = [
-    { id: "name", type: "text", text: "Namaste! I'm Skillo 👋\nWhat's your name?" },
-    { id: "grade", type: "buttons", text: (a) => `Nice to meet you, ${a.name}!\nWhich class are you in?`, options: ["6", "7", "8", "9", "10", "11", "12", "College"] },
-    { id: "board", type: "buttons", text: "Which board do you follow?", options: ["CBSE", "ICSE", "State Board"] },
-    { id: "language", type: "buttons", text: "What language do you prefer?", options: ["English", "हिंदी"] },
-    { id: "schoolType", type: "buttons", text: "What type of school do you go to?", options: ["Government School", "Private School"] },
-    { id: "instCheck", type: "buttons", text: "Do you have an institution code?\n(Given by your school or college)", options: ["I have a code", "Skip for now"] },
-    { id: "instID", type: "text", text: "Please enter your institution code:" },
-    { id: "goal", type: "buttons", text: "What is your main goal?", options: ["Score well in board exam", "Crack entrance exam (JEE/NEET)", "Understand concepts deeply"] },
-    { id: "done", type: "end", text: (a) => `Perfect! I'm ready to be your\npersonal tutor, ${a.name}. Let's begin! 🚀` }
+    { id: "name", type: "text", emoji: "👋", title: "नमस्ते! I'm Skillo.", sub: "What's your name?", placeholder: "Your name..." },
+    { id: "grade", type: "buttons", emoji: "📚", title: (a) => `Nice to meet you, ${a.name}! 🎉`, sub: "Which class are you in?", options: ["6","7","8","9","10","11","12","College"] },
+    { id: "board", type: "buttons", emoji: "🏫", title: "Which board do you follow?", sub: "", options: ["CBSE","ICSE","State Board"] },
+    { id: "language", type: "buttons", emoji: "🗣️", title: "Which language do you prefer?", sub: "", options: ["🇮🇳 हिंदी","🇬🇧 English"] },
+    { id: "schoolType", type: "buttons", emoji: "🏛️", title: "What type of school?", sub: "", options: ["🏛️ Government School","🏫 Private School"] },
+    { id: "goal", type: "buttons", emoji: "🎯", title: "What's your main goal?", sub: "", options: ["📝 Score well in boards","🎯 Crack JEE / NEET","💡 Understand concepts deeply"] },
+    { id: "done", type: "end", emoji: "✅", title: (a) => `You're all set, ${a.name}! 🚀`, sub: "Skillo is ready to be your personal tutor." }
   ];
 
-  const currentStep = steps[stepIndex];
+  const totalSteps = steps.length;
+  const current = steps[stepIndex];
+  const progress = ((stepIndex) / (totalSteps - 1)) * 100;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
-
-  useEffect(() => {
-    if (stepIndex === 0 && messages.length === 0) {
-      appendBotMessage(steps[0].text);
+    if (current?.type === "text" && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 400);
     }
-  }, []);
+  }, [stepIndex]);
 
-  const appendBotMessage = (textTemplate) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      const text = typeof textTemplate === "function" ? textTemplate(answers) : textTemplate;
-      setMessages(prev => [...prev, { role: "assistant", content: text }]);
-      setIsTyping(false);
-      
-      if (steps[stepIndex]?.id === "done" || stepIndex >= steps.length - 1) {
-        finishOnboarding(answers);
-      }
-    }, BOT_DELAY);
-  };
+  const advance = (val) => {
+    if (transitioning) return;
+    setTransitioning(true);
 
-  const advanceToStep = (nextIdx, currentAnswers) => {
-    if (nextIdx >= steps.length) return;
-    
-    setStepIndex(nextIdx);
-    const nextStep = steps[nextIdx];
-    const text = typeof nextStep.text === "function" ? nextStep.text(currentAnswers) : nextStep.text;
-    
-    setIsTyping(true);
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: "assistant", content: text }]);
-      setIsTyping(false);
-      if (nextStep.id === "done") {
-        finishOnboarding(currentAnswers);
-      }
-    }, BOT_DELAY);
-  };
-
-  const handleAnswer = async (val) => {
-    if (!val.trim()) return;
-    setMessages(prev => [...prev, { role: "user", content: val }]);
-    
-    const newAnswers = { ...answers, [currentStep.id]: val };
+    const newAnswers = { ...answers, [current.id]: val };
     setAnswers(newAnswers);
     setInputText("");
 
-    if (currentStep.id === "instCheck") {
-      if (val === "Skip for now") {
-        advanceToStep(stepIndex + 2, newAnswers);
-      } else {
-        advanceToStep(stepIndex + 1, newAnswers);
-      }
-      return;
-    }
-
-    if (currentStep.id === "instID") {
-      setIsTyping(true);
-      if (supabase) {
-        const { data } = await supabase.from('institutions').select('name').eq('institution_id', val).single();
-        if (data) {
-          newAnswers.institution_name = data.name;
-          setAnswers(newAnswers);
-          setMessages(prev => [...prev, { role: "assistant", content: `✅ Connected to ${data.name}!` }]);
-          setTimeout(() => advanceToStep(stepIndex + 1, newAnswers), 1000);
-        } else {
-          setIsTyping(false);
-          setMessages(prev => [...prev, { role: "assistant", content: `❌ Invalid code. Try again.` }]);
-        }
-      } else {
-        // Fallback if no supabase
-        advanceToStep(stepIndex + 1, newAnswers);
-      }
-      return;
-    }
-
-    advanceToStep(stepIndex + 1, newAnswers);
+    setTimeout(() => {
+      setStepIndex(prev => prev + 1);
+      setTransitioning(false);
+    }, 300);
   };
 
-  const finishOnboarding = async (finalAnswers) => {
+  const handleTextSubmit = (e) => {
+    e.preventDefault();
+    if (!inputText.trim()) return;
+    advance(inputText.trim());
+  };
+
+  const finishOnboarding = async () => {
     const userId = "student_001";
-    
+    const lang = answers.language.includes("हिंदी") ? "hi" : "en";
+    const sch = answers.schoolType.includes("Government") ? "government" : "private";
+    const goal = answers.goal.includes("boards") ? "board_exam" : answers.goal.includes("JEE") ? "entrance_exam" : "concept_mastery";
+
     localStorage.setItem("skillo_user_id", userId);
-    localStorage.setItem("skillo_name", finalAnswers.name);
-    localStorage.setItem("skillo_grade", finalAnswers.grade);
-    localStorage.setItem("skillo_lang", finalAnswers.language);
+    localStorage.setItem("skillo_name", answers.name);
+    localStorage.setItem("skillo_grade", answers.grade);
+    localStorage.setItem("skillo_lang", lang);
 
     const model = {
       userId,
-      profile: {
-        name: finalAnswers.name,
-        grade: finalAnswers.grade,
-        board: finalAnswers.board,
-        language: finalAnswers.language,
-        schoolType: finalAnswers.schoolType,
-        goal: finalAnswers.goal
-      },
+      profile: { name: answers.name, grade: answers.grade, board: answers.board, language: lang, schoolType: sch, goal },
       subjects: { maths: { curriculumId: "CBSE_G9_MATHS", topics: {} } },
       learningStyle: { prefersAnalogy: true, prefersVisual: false, vocabularyLevel: "basic" },
       signals: { confidence: {} },
@@ -148,98 +81,96 @@ export default function OnboardChat() {
 
     if (supabase) {
       await supabase.from("learner_models").upsert({
-        user_id: userId,
-        model_json: model,
-        updated_at: new Date().toISOString()
+        user_id: userId, model_json: model, updated_at: new Date().toISOString()
       }, { onConflict: "user_id" });
-
-      if (finalAnswers.instID && finalAnswers.institution_name) {
-        await supabase.from("institution_students").insert({
-          institution_id: finalAnswers.instID,
-          user_id: userId,
-          department: "General",
-          year: finalAnswers.grade === "College" ? 1 : parseInt(finalAnswers.grade) || 9
-        });
-        localStorage.setItem("skillo_institution_id", finalAnswers.instID);
-      }
     }
-    
-    localStorage.setItem("skillo_learner_model", JSON.stringify(model));
 
-    setTimeout(() => {
-      router.push("/chat");
-    }, 1500);
+    localStorage.setItem("skillo_learner_model", JSON.stringify(model));
+    router.push("/chat");
   };
 
-  return (
-    <div className="flex flex-col h-[100dvh] bg-[#0f0e0d] max-w-2xl mx-auto border-x border-[#2a2824] relative shadow-2xl overflow-hidden">
-      <header className="bg-[#181714] border-b border-[#2a2824] p-3 md:p-4 flex items-center gap-3 z-10 sticky top-0">
-        <div className="w-10 h-10 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f0e0d] font-bold text-xl">S</div>
-        <div>
-          <h1 className="text-lg font-bold text-[#e8e2d9]">Skillo Onboarding</h1>
-          <p className="text-xs text-green-500 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online
-          </p>
-        </div>
-      </header>
+  const titleText = typeof current?.title === "function" ? current.title(answers) : current?.title;
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-[120px] scroll-smooth">
-        {messages.map((m, i) => (
-          <div key={i} className={`flex w-full ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${m.role === "user" ? "bg-[#c9a84c] text-[#0f0e0d] rounded-tr-sm" : "bg-[#181714] text-[#e8e2d9] border border-[#2a2824] rounded-tl-sm whitespace-pre-wrap leading-relaxed"}`}>
-              {m.content}
-            </div>
-          </div>
-        ))}
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-[#181714] border border-[#2a2824] rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-1">
-              <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-              <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-              <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+  return (
+    <div className="min-h-screen bg-[var(--bg)] flex flex-col">
+      {/* Progress bar */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-[var(--border)] z-50">
+        <div className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="absolute bottom-0 w-full bg-[#181714] border-t border-[#2a2824] p-3 md:p-4">
-        {!isTyping && currentStep?.id !== "done" && (
-          currentStep?.type === "buttons" ? (
-             <div className="flex flex-wrap gap-2 justify-center pb-2">
-               {currentStep.options.map(opt => (
-                 <button key={opt} onClick={() => handleAnswer(opt)} className="bg-[#2a2824] hover:bg-[#3a3834] text-[#e8e2d9] border border-[#3a3834] px-4 py-2 rounded-full text-sm transition-colors active:scale-95">
-                   {opt}
-                 </button>
-               ))}
-             </div>
-          ) : currentStep?.type === "text" ? (
-            <form onSubmit={(e) => { e.preventDefault(); handleAnswer(inputText); }} className="flex gap-2 max-w-2xl mx-auto relative items-center">
+      {/* Step counter */}
+      <div className="fixed top-4 right-4 z-50 text-xs text-[var(--muted)] bg-[var(--surface)] px-3 py-1.5 rounded-full border border-[var(--border)]">
+        {stepIndex + 1} / {totalSteps}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div key={stepIndex} className={`w-full max-w-md text-center transition-all duration-300 ${transitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
+          {/* Emoji */}
+          <div className="text-6xl mb-6 animate-scale-in">{current?.emoji}</div>
+
+          {/* Title */}
+          <h1 className="text-2xl md:text-3xl font-extrabold mb-2 leading-tight" style={{fontFamily:"var(--font-heading)"}}>
+            {titleText}
+          </h1>
+
+          {current?.sub && (
+            <p className="text-[var(--muted)] mb-8 text-base">{current.sub}</p>
+          )}
+
+          {/* Text input */}
+          {current?.type === "text" && (
+            <form onSubmit={handleTextSubmit} className="mt-8 space-y-4">
               <input
+                ref={inputRef}
                 type="text"
-                autoFocus
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Type your answer..."
-                className="flex-1 bg-[#0f0e0d] border border-[#33312c] rounded-full pl-4 pr-12 py-3 text-[#e8e2d9] focus:outline-none focus:border-[#c9a84c]"
+                placeholder={current.placeholder}
+                className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl px-5 py-4 text-lg text-center text-[var(--text)] placeholder:text-[var(--muted)]/50 focus:border-[var(--accent)]"
               />
               <button
                 type="submit"
                 disabled={!inputText.trim()}
-                className="absolute right-2 bottom-2 bg-[#c9a84c] text-[#0f0e0d] p-2 rounded-full hover:bg-[#b8973b] transition-colors disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] font-bold py-4 rounded-2xl hover:brightness-110 transition disabled:opacity-30 btn-tap flex items-center justify-center gap-2 text-base"
               >
-                <Send className="w-4 h-4 ml-0.5" />
+                Let&apos;s go <ArrowRight className="w-5 h-5" />
               </button>
             </form>
-          ) : null
-        )}
-        {currentStep?.id === "done" && (
-          <div className="flex justify-center pb-2">
-            <button onClick={() => router.push("/chat")} className="bg-[#c9a84c] text-[#0f0e0d] font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-[#b8973b] transition-colors active:scale-95 flex items-center gap-2">
-              Start Learning <Send className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+          )}
+
+          {/* Buttons */}
+          {current?.type === "buttons" && (
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              {current.options.map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => advance(opt)}
+                  className="bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] px-4 py-4 rounded-2xl text-sm font-medium hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all btn-tap"
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* End state */}
+          {current?.type === "end" && (
+            <div className="mt-8">
+              <button
+                onClick={finishOnboarding}
+                className="w-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] font-bold py-4 rounded-2xl hover:brightness-110 transition btn-tap flex items-center justify-center gap-2 text-lg shadow-[0_4px_24px_rgba(245,166,35,0.3)]"
+              >
+                Start Learning <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Brand */}
+      <div className="text-center pb-6 text-xs text-[var(--muted)]/50">
+        Skillo AI Tutor
       </div>
     </div>
   );

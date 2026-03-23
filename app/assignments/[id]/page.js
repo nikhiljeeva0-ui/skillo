@@ -91,9 +91,9 @@ export default function AssignmentSubmit() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] flex flex-col items-center justify-center p-4 text-center">
+      <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col items-center justify-center p-4 text-center">
         <p className="text-xl mb-4">❌ {error}</p>
-        <button onClick={() => router.push("/chat")} className="bg-[#c9a84c] text-[#0f0e0d] px-8 py-3 rounded-full font-bold hover:bg-[#b8973b] transition-colors">
+        <button onClick={() => router.push("/chat")} className="bg-[var(--accent)] text-[var(--bg)] px-8 py-3 rounded-full font-bold hover:bg-[var(--accent2)] transition-colors">
           Go to Chat
         </button>
       </div>
@@ -106,24 +106,24 @@ export default function AssignmentSubmit() {
     const isPerfect = percentage === 100;
 
     return (
-      <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] p-4 md:p-8">
+      <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
           <header className="mb-8">
             <div className="flex items-center gap-3 mb-4">
-              <button onClick={() => router.push("/chat")} className="p-2 bg-[#181714] rounded-full hover:bg-[#2a2824] transition-colors">
+              <button onClick={() => router.push("/chat")} className="p-2 bg-[var(--surface)] rounded-full hover:bg-[var(--border)] transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <h1 className="text-2xl font-bold tracking-tight">Grading Results</h1>
             </div>
-            <p className="text-gray-400">{assignment.title}</p>
+            <p className="text-[var(--muted)]">{assignment.title}</p>
           </header>
 
           {/* Score Card */}
-          <div className={`rounded-2xl p-8 text-center mb-8 border ${isPerfect ? 'bg-emerald-500/10 border-emerald-500/30' : percentage >= 60 ? 'bg-[#c9a84c]/10 border-[#c9a84c]/30' : 'bg-red-500/10 border-red-500/30'}`}>
+          <div className={`rounded-2xl p-8 text-center mb-8 border ${isPerfect ? 'bg-emerald-500/10 border-emerald-500/30' : percentage >= 60 ? 'bg-[var(--accent)]/10 border-[var(--accent)]/30' : 'bg-red-500/10 border-red-500/30'}`}>
             <div className="text-5xl font-bold mb-2">
               {results.totalScore} / {results.totalMax}
             </div>
-            <div className={`text-lg font-medium ${isPerfect ? 'text-emerald-400' : percentage >= 60 ? 'text-[#c9a84c]' : 'text-red-400'}`}>
+            <div className={`text-lg font-medium ${isPerfect ? 'text-emerald-400' : percentage >= 60 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
               {percentage}% {isPerfect ? "🏆 Perfect Score!" : percentage >= 80 ? "🌟 Great Job!" : percentage >= 60 ? "👍 Good Effort!" : "📚 Keep Practicing!"}
             </div>
           </div>
@@ -131,13 +131,13 @@ export default function AssignmentSubmit() {
           {/* Per-question results */}
           <div className="space-y-4">
             {results.results.map((r, i) => (
-              <div key={i} className={`bg-[#181714] rounded-2xl p-6 border ${r.is_correct ? 'border-emerald-500/30' : 'border-red-500/30'}`}>
+              <div key={i} className={`bg-[var(--surface)] rounded-2xl p-6 border ${r.is_correct ? 'border-emerald-500/30' : 'border-red-500/30'}`}>
                 <div className="flex items-start gap-3 mb-3">
                   <div className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${r.is_correct ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                     {r.is_correct ? <Check className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-200 mb-1">Q{i + 1}: {r.questionText}</p>
+                    <p className="font-medium text-[var(--text)] mb-1">Q{i + 1}: {r.questionText}</p>
                     <p className={`text-sm font-semibold ${r.is_correct ? 'text-emerald-400' : 'text-red-400'}`}>
                       {r.is_correct ? `✅ Sahi hai! ${r.marks_awarded} marks` : `❌ ${r.marks_awarded}/${r.maxMarks} marks`}
                     </p>
@@ -147,20 +147,20 @@ export default function AssignmentSubmit() {
                 {!r.is_correct && (
                   <div className="ml-10 space-y-2 text-sm">
                     <div className="bg-red-500/5 rounded-xl p-3 border border-red-500/10">
-                      <p className="text-gray-400">Tumhara answer:</p>
-                      <p className="text-gray-300">{r.studentAnswer || "(empty)"}</p>
+                      <p className="text-[var(--muted)]">Tumhara answer:</p>
+                      <p className="text-[var(--text)]">{r.studentAnswer || "(empty)"}</p>
                     </div>
                     <div className="bg-emerald-500/5 rounded-xl p-3 border border-emerald-500/10">
-                      <p className="text-gray-400">Sahi answer:</p>
+                      <p className="text-[var(--muted)]">Sahi answer:</p>
                       <p className="text-emerald-300">{r.correctAnswer}</p>
                     </div>
-                    <div className="bg-[#0f0e0d] rounded-xl p-3 border border-[#2a2824]">
-                      <p className="text-gray-400 mb-1">Explanation:</p>
-                      <p className="text-gray-300">{r.explanation}</p>
+                    <div className="bg-[var(--bg)] rounded-xl p-3 border border-[var(--border)]">
+                      <p className="text-[var(--muted)] mb-1">Explanation:</p>
+                      <p className="text-[var(--text)]">{r.explanation}</p>
                     </div>
-                    <div className="bg-[#c9a84c]/5 rounded-xl p-3 border border-[#c9a84c]/20">
-                      <p className="text-[#c9a84c] text-xs font-medium mb-1">💡 Improvement Tip:</p>
-                      <p className="text-gray-300">{r.improvement_tip}</p>
+                    <div className="bg-[var(--accent)]/5 rounded-xl p-3 border border-[var(--accent)]/20">
+                      <p className="text-[var(--accent)] text-xs font-medium mb-1">💡 Improvement Tip:</p>
+                      <p className="text-[var(--text)]">{r.improvement_tip}</p>
                     </div>
                   </div>
                 )}
@@ -175,10 +175,10 @@ export default function AssignmentSubmit() {
           </div>
 
           <div className="mt-8 flex flex-col gap-3">
-            <button onClick={() => router.push("/chat")} className="w-full bg-[#c9a84c] text-[#0f0e0d] font-bold py-4 rounded-full hover:bg-[#b8973b] transition-colors active:scale-[0.98]">
+            <button onClick={() => router.push("/chat")} className="w-full bg-[var(--accent)] text-[var(--bg)] font-bold py-4 rounded-full hover:bg-[var(--accent2)] transition-colors active:scale-[0.98]">
               Continue Learning →
             </button>
-            <button onClick={() => router.push("/leaderboard")} className="w-full bg-[#2a2824] text-[#e8e2d9] font-medium py-3 rounded-full hover:bg-[#3a3834] transition-colors">
+            <button onClick={() => router.push("/leaderboard")} className="w-full bg-[var(--border)] text-[var(--text)] font-medium py-3 rounded-full hover:bg-[var(--border)] transition-colors">
               🏆 View Leaderboard
             </button>
           </div>
@@ -189,28 +189,28 @@ export default function AssignmentSubmit() {
 
   // Submit view
   return (
-    <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] p-4 md:p-8">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
         <header className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => router.push("/chat")} className="p-2 bg-[#181714] rounded-full hover:bg-[#2a2824] transition-colors">
+            <button onClick={() => router.push("/chat")} className="p-2 bg-[var(--surface)] rounded-full hover:bg-[var(--border)] transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-2xl font-bold tracking-tight">{assignment.title}</h1>
           </div>
           <div className="flex flex-wrap gap-3 text-sm">
-            <span className="bg-[#181714] border border-[#2a2824] px-3 py-1 rounded-full text-[#c9a84c]">
+            <span className="bg-[var(--surface)] border border-[var(--border)] px-3 py-1 rounded-full text-[var(--accent)]">
               📚 {assignment.subject}
             </span>
-            <span className="bg-[#181714] border border-[#2a2824] px-3 py-1 rounded-full text-gray-400">
+            <span className="bg-[var(--surface)] border border-[var(--border)] px-3 py-1 rounded-full text-[var(--muted)]">
               Class {assignment.grade}
             </span>
             {assignment.due_date && (
-              <span className="bg-[#181714] border border-[#2a2824] px-3 py-1 rounded-full text-gray-400">
+              <span className="bg-[var(--surface)] border border-[var(--border)] px-3 py-1 rounded-full text-[var(--muted)]">
                 📅 Due: {new Date(assignment.due_date).toLocaleDateString('en-IN')}
               </span>
             )}
-            <span className="bg-[#181714] border border-[#2a2824] px-3 py-1 rounded-full text-gray-400">
+            <span className="bg-[var(--surface)] border border-[var(--border)] px-3 py-1 rounded-full text-[var(--muted)]">
               Total: {assignment.max_marks} marks
             </span>
           </div>
@@ -218,14 +218,14 @@ export default function AssignmentSubmit() {
 
         <div className="space-y-6">
           {assignment.questions.map((q, idx) => (
-            <div key={idx} className="bg-[#181714] border border-[#2a2824] rounded-2xl p-6">
+            <div key={idx} className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="font-semibold text-[#c9a84c]">Question {idx + 1}</h3>
-                <span className="text-xs text-gray-500 bg-[#0f0e0d] px-2 py-1 rounded-full">
+                <h3 className="font-semibold text-[var(--accent)]">Question {idx + 1}</h3>
+                <span className="text-xs text-[var(--muted)] bg-[var(--bg)] px-2 py-1 rounded-full">
                   {q.maxMarks} marks
                 </span>
               </div>
-              <p className="text-gray-200 mb-4 leading-relaxed">{q.text}</p>
+              <p className="text-[var(--text)] mb-4 leading-relaxed">{q.text}</p>
 
               {q.type === "MCQ" && q.options && q.options.length > 0 ? (
                 <div className="space-y-2">
@@ -234,8 +234,8 @@ export default function AssignmentSubmit() {
                       key={oi}
                       className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
                         answers[idx] === opt
-                          ? 'border-[#c9a84c] bg-[#c9a84c]/10'
-                          : 'border-[#2a2824] hover:border-[#3a3834]'
+                          ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                          : 'border-[var(--border)] hover:border-[var(--border)]'
                       }`}
                     >
                       <input
@@ -247,11 +247,11 @@ export default function AssignmentSubmit() {
                         className="sr-only"
                       />
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        answers[idx] === opt ? 'border-[#c9a84c]' : 'border-[#3a3834]'
+                        answers[idx] === opt ? 'border-[var(--accent)]' : 'border-[var(--border)]'
                       }`}>
-                        {answers[idx] === opt && <div className="w-2.5 h-2.5 rounded-full bg-[#c9a84c]" />}
+                        {answers[idx] === opt && <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />}
                       </div>
-                      <span className="text-gray-300 text-sm">{opt}</span>
+                      <span className="text-[var(--text)] text-sm">{opt}</span>
                     </label>
                   ))}
                 </div>
@@ -261,7 +261,7 @@ export default function AssignmentSubmit() {
                   onChange={(e) => updateAnswer(idx, e.target.value)}
                   placeholder="Write your answer here..."
                   rows={4}
-                  className="w-full bg-[#0f0e0d] border border-[#33312c] rounded-xl px-4 py-3 text-[#e8e2d9] focus:outline-none focus:border-[#c9a84c] resize-none placeholder:text-gray-600"
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] focus:outline-none focus:border-[var(--accent)] resize-none placeholder:text-[var(--muted)]"
                 />
               ) : (
                 <input
@@ -269,7 +269,7 @@ export default function AssignmentSubmit() {
                   value={answers[idx] || ""}
                   onChange={(e) => updateAnswer(idx, e.target.value)}
                   placeholder="Type your answer..."
-                  className="w-full bg-[#0f0e0d] border border-[#33312c] rounded-xl px-4 py-3 text-[#e8e2d9] focus:outline-none focus:border-[#c9a84c] placeholder:text-gray-600"
+                  className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
                 />
               )}
             </div>
@@ -279,7 +279,7 @@ export default function AssignmentSubmit() {
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full mt-8 mb-8 bg-[#c9a84c] text-[#0f0e0d] font-bold py-4 rounded-full hover:bg-[#b8973b] transition-colors shadow-lg active:scale-[0.98] disabled:opacity-50 text-lg flex items-center justify-center gap-2"
+          className="w-full mt-8 mb-8 bg-[var(--accent)] text-[var(--bg)] font-bold py-4 rounded-full hover:bg-[var(--accent2)] transition-colors shadow-lg active:scale-[0.98] disabled:opacity-50 text-lg flex items-center justify-center gap-2"
         >
           {submitting ? (
             <>AI checking your answers... ⏳</>

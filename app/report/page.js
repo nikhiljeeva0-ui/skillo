@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Share2, Check, ArrowLeft, Brain, BookOpen, Flame, Star, Lightbulb } from "lucide-react";
+import { Share2, Check, ArrowLeft, Brain, BookOpen, Flame, Star, Lightbulb, TrendingUp, Award } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { buildReport } from "@/lib/reportBuilder";
 import Loading from "@/components/Loading";
@@ -11,119 +11,103 @@ function MemorySummary({ model }) {
 
   const sessions = model.sessionStats?.totalSessions || 0;
   const streak = model.sessionStats?.streakDays || 0;
-  const lastSeen = model.sessionStats?.lastSeen;
   const topics = model.subjects?.maths?.topics || {};
-
-  const mastered = Object.entries(topics)
-    .filter(([_, v]) => v.status === 'mastered')
-    .map(([k]) => k);
-
-  const shaky = Object.entries(topics)
-    .filter(([_, v]) => v.status === 'shaky')
-    .map(([k, v]) => ({ topic: k, errors: v.commonErrors || [] }));
-
-  // Calculate days since first session
-  const confidenceDates = Object.keys(model.signals?.confidence || {}).sort();
+  const mastered = Object.entries(topics).filter(([_,v])=>v.status==='mastered').map(([k])=>k);
+  const shaky = Object.entries(topics).filter(([_,v])=>v.status==='shaky').map(([k,v])=>({topic:k,errors:v.commonErrors||[]}));
+  const confidenceDates = Object.keys(model.signals?.confidence||{}).sort();
   const firstDate = confidenceDates.length > 0 ? confidenceDates[0] : null;
-  const daysSinceStart = firstDate ?
-    Math.floor((new Date() - new Date(firstDate)) / (1000 * 60 * 60 * 24)) + 1 : 0;
+  const daysSinceStart = firstDate ? Math.floor((new Date() - new Date(firstDate))/(1000*60*60*24)) + 1 : sessions > 0 ? 1 : 0;
 
-  // Learning style
   const styles = [];
   if (model.learningStyle?.prefersAnalogy) styles.push("Analogy lover 🎯");
   if (model.learningStyle?.prefersVisual) styles.push("Step-by-step learner 📐");
   if (styles.length === 0) styles.push("Still learning your style 🔍");
 
+  const totalTopics = Object.keys(topics).length;
+  const masteryPct = totalTopics > 0 ? Math.round((mastered.length / totalTopics) * 100) : 0;
+
   return (
-    <div className="bg-[#181714] border border-[#2a2824] rounded-2xl overflow-hidden shadow-xl mb-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#c9a84c]/20 to-[#c9a84c]/5 px-6 py-4 border-b border-[#2a2824]">
-        <h2 className="text-lg font-bold flex items-center gap-2 text-[#c9a84c]">
-          <Brain className="w-5 h-5" /> Memory Summary
+    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden mb-6 animate-fade-in-up stagger-1">
+      <div className="bg-gradient-to-r from-[var(--accent)]/15 to-[var(--accent2)]/5 px-6 py-4 border-b border-[var(--border)]">
+        <h2 className="text-lg font-extrabold flex items-center gap-2 text-[var(--accent)]" style={{fontFamily:"var(--font-heading)"}}>
+          <Brain className="w-5 h-5" /> What Skillo remembers about you
         </h2>
-        <p className="text-xs text-gray-400 mt-1">What Skillo remembers about you — no other AI has this.</p>
+        <p className="text-xs text-[var(--muted)] mt-1">No other AI tutor does this.</p>
       </div>
 
       <div className="p-6 space-y-5">
-        {/* Stats row */}
+        {/* Stats grid */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[#0f0e0d] rounded-xl p-3 text-center border border-[#2a2824]">
-            <p className="text-2xl font-bold text-[#c9a84c]">{sessions}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Sessions</p>
-          </div>
-          <div className="bg-[#0f0e0d] rounded-xl p-3 text-center border border-[#2a2824]">
-            <p className="text-2xl font-bold text-orange-400">{streak}</p>
-            <p className="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-0.5"><Flame className="w-3 h-3" /> Streak</p>
-          </div>
-          <div className="bg-[#0f0e0d] rounded-xl p-3 text-center border border-[#2a2824]">
-            <p className="text-2xl font-bold text-emerald-400">{daysSinceStart}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Days</p>
-          </div>
+          {[
+            { val: sessions, label: "Sessions", icon: TrendingUp, color: "text-[var(--accent)]" },
+            { val: streak, label: "Streak", icon: Flame, color: "text-[var(--accent2)]" },
+            { val: daysSinceStart, label: "Days", icon: Award, color: "text-[var(--green)]" }
+          ].map((s,i) => (
+            <div key={i} className="bg-[var(--bg)] rounded-xl p-3 text-center border border-[var(--border)]">
+              <s.icon className={`w-4 h-4 mx-auto mb-1 ${s.color}`} />
+              <p className="text-2xl font-extrabold" style={{fontFamily:"var(--font-heading)"}}>{s.val}</p>
+              <p className="text-[10px] text-[var(--muted)]">{s.label}</p>
+            </div>
+          ))}
         </div>
 
-        <p className="text-sm text-gray-400 text-center">
-          Skillo has known you for <span className="text-[#e8e2d9] font-medium">{sessions} sessions</span> over <span className="text-[#e8e2d9] font-medium">{daysSinceStart} days</span>
+        <p className="text-sm text-[var(--muted)] text-center">
+          Skillo has known you for <span className="text-[var(--text)] font-medium">{sessions} sessions</span> over <span className="text-[var(--text)] font-medium">{daysSinceStart} days</span>
         </p>
 
-        {/* Mastered topics */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-300 flex items-center gap-1.5 mb-2">
-            <Star className="w-4 h-4 text-emerald-400" /> Topics Skillo remembers you mastered
-          </h3>
-          {mastered.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {mastered.map(t => (
-                <span key={t} className="text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full">
-                  ✅ {t}
-                </span>
-              ))}
+        {/* Mastery ring */}
+        {totalTopics > 0 && (
+          <div className="flex items-center justify-center gap-4">
+            <div className="relative w-20 h-20">
+              <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--border)" strokeWidth="2.5" />
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--green)" strokeWidth="2.5"
+                  strokeDasharray={`${masteryPct} ${100-masteryPct}`}
+                  strokeLinecap="round"
+                  className="progress-bar"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm font-extrabold" style={{fontFamily:"var(--font-heading)"}}>{masteryPct}%</span>
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-gray-500">None yet — keep studying!</p>
-          )}
-        </div>
-
-        {/* Shaky topics */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-300 flex items-center gap-1.5 mb-2">
-            <BookOpen className="w-4 h-4 text-amber-400" /> Topics Skillo is helping you improve
-          </h3>
-          {shaky.length > 0 ? (
-            <div className="space-y-2">
-              {shaky.map(s => (
-                <div key={s.topic} className="bg-[#0f0e0d] border border-[#2a2824] rounded-xl p-3">
-                  <p className="text-sm font-medium text-amber-400 mb-1">📚 {s.topic}</p>
-                  {s.errors.length > 0 && (
-                    <p className="text-xs text-gray-500">Common mistakes: {s.errors.join(', ')}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">None yet — all clear!</p>
-          )}
-        </div>
-
-        {/* Learning style */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-300 flex items-center gap-1.5 mb-2">
-            <Lightbulb className="w-4 h-4 text-[#c9a84c]" /> Your learning style
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {styles.map((s, i) => (
-              <span key={i} className="text-xs bg-[#c9a84c]/10 border border-[#c9a84c]/20 text-[#c9a84c] px-3 py-1.5 rounded-full font-medium">
-                {s}
-              </span>
-            ))}
+            <div><p className="text-sm font-semibold">Overall Mastery</p><p className="text-xs text-[var(--muted)]">{mastered.length}/{totalTopics} topics</p></div>
           </div>
+        )}
+
+        {/* Mastered */}
+        <div>
+          <h3 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5"><Star className="w-3.5 h-3.5 text-[var(--green)]" /> Mastered</h3>
+          {mastered.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">{mastered.map(t=>(
+              <span key={t} className="text-xs bg-[var(--green)]/10 border border-[var(--green)]/20 text-[var(--green)] px-2.5 py-1 rounded-full">✅ {t}</span>
+            ))}</div>
+          ) : <p className="text-xs text-[var(--muted)]/50">None yet — keep studying!</p>}
         </div>
 
-        {/* Differentiator */}
-        <div className="bg-[#c9a84c]/5 border border-[#c9a84c]/20 rounded-xl p-4 text-center">
-          <p className="text-xs text-[#c9a84c] font-medium">
-            🧠 Skillo remembers your entire learning journey.<br/>
-            No other AI tool does this.
-          </p>
+        {/* Shaky */}
+        <div>
+          <h3 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5 text-amber-400" /> Improving</h3>
+          {shaky.length > 0 ? (
+            <div className="space-y-1.5">{shaky.map(s=>(
+              <div key={s.topic} className="bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2">
+                <p className="text-xs font-medium text-amber-400">📚 {s.topic}</p>
+                {s.errors.length > 0 && <p className="text-[10px] text-[var(--muted)] mt-0.5">Errors: {s.errors.join(', ')}</p>}
+              </div>
+            ))}</div>
+          ) : <p className="text-xs text-[var(--muted)]/50">All clear! 🎉</p>}
+        </div>
+
+        {/* Style */}
+        <div>
+          <h3 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5"><Lightbulb className="w-3.5 h-3.5 text-[var(--accent)]" /> Learning style</h3>
+          <div className="flex flex-wrap gap-1.5">{styles.map((s,i)=>(
+            <span key={i} className="text-xs bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] px-3 py-1.5 rounded-full font-medium">{s}</span>
+          ))}</div>
+        </div>
+
+        <div className="bg-[var(--accent)]/5 border border-[var(--accent)]/15 rounded-xl p-3 text-center">
+          <p className="text-[10px] text-[var(--accent)] font-medium">🧠 Skillo remembers your entire learning journey. No other AI tool does this.</p>
         </div>
       </div>
     </div>
@@ -137,76 +121,72 @@ export default function ReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [model, setModel] = useState(null);
-  
+
   useEffect(() => {
     async function fetchReport() {
       const userId = localStorage.getItem("skillo_user_id") || "student_001";
-
-      // Always load model for memory summary
       const localModel = localStorage.getItem("skillo_learner_model");
-      if (localModel) {
-        try { setModel(JSON.parse(localModel)); } catch(e) {}
-      }
+      if (localModel) { try { setModel(JSON.parse(localModel)); } catch(e) {} }
 
       try {
         const res = await fetch(`/api/report?userId=${userId}`);
         if (!res.ok) throw new Error("Fetch failed");
-        const text = await res.text();
-        setReport(text);
+        setReport(await res.text());
       } catch (e) {
-        console.warn("Offline or API failed, falling back to local storage...");
-        if (localModel) {
-          const parsed = JSON.parse(localModel);
-          setReport(buildReport(parsed));
-        } else {
-          setReport("Could not load report. Please connect to the internet.");
-          setError(true);
-        }
+        if (localModel) { setReport(buildReport(JSON.parse(localModel))); } else { setReport("Could not load report."); setError(true); }
       }
       setLoading(false);
     }
-    
     fetchReport();
   }, []);
 
   const handleCopy = () => {
-    const fullText = report + (model ? `\n\n--- Memory Summary ---\nSessions: ${model.sessionStats?.totalSessions || 0}\nStreak: ${model.sessionStats?.streakDays || 0} days` : '');
-    navigator.clipboard.writeText(fullText);
+    navigator.clipboard.writeText(report);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) return <Loading />;
   if (error) return (
-    <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] flex flex-col items-center justify-center p-4 text-center">
-      <p className="text-xl mb-4">Report load nahi hua. Refresh karo.</p>
-      <button onClick={() => window.location.reload()} className="bg-[#c9a84c] text-[#0f0e0d] px-6 py-2 rounded-full font-bold">Refresh</button>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col items-center justify-center p-4 text-center">
+      <p className="text-xl mb-4" style={{fontFamily:"var(--font-heading)"}}>Report load nahi hua.</p>
+      <button onClick={()=>window.location.reload()} className="bg-[var(--accent)] text-[var(--bg)] px-6 py-2 rounded-xl font-bold btn-tap">Refresh</button>
     </div>
   );
 
+  const name = model?.profile?.name || localStorage.getItem("skillo_name") || "Student";
+  const grade = model?.profile?.grade || localStorage.getItem("skillo_grade") || "?";
+
   return (
-    <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] p-4 md:p-8 flex justify-center">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-4 md:p-8 flex justify-center">
       <div className="max-w-md w-full">
-        <header className="mb-6 flex items-center gap-4 border-b border-[#2a2824] pb-4">
-          <button onClick={() => router.push("/chat")} className="p-2 bg-[#181714] rounded-full hover:bg-[#2a2824] transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-2xl font-bold tracking-tight">Parent Report</h1>
+        <header className="mb-6 flex items-center gap-4">
+          <button onClick={()=>router.push("/chat")} className="p-2 bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:bg-[var(--surface2)] transition"><ArrowLeft className="w-5 h-5" /></button>
+          <div>
+            <h1 className="text-xl font-extrabold" style={{fontFamily:"var(--font-heading)"}}>Progress Report</h1>
+            <p className="text-xs text-[var(--muted)]">{name} • Class {grade}</p>
+          </div>
         </header>
 
-        {/* Memory Summary Section */}
+        {/* Avatar */}
+        <div className="text-center mb-6 animate-fade-in">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)] flex items-center justify-center text-[var(--bg)] font-extrabold text-2xl mb-3 shadow-lg" style={{fontFamily:"var(--font-heading)"}}>{name.charAt(0).toUpperCase()}</div>
+          <h2 className="text-lg font-bold" style={{fontFamily:"var(--font-heading)"}}>{name}</h2>
+          <p className="text-xs text-[var(--muted)]">Class {grade} • Learning with Skillo for {model?.sessionStats?.totalSessions || 0} sessions</p>
+        </div>
+
         <MemorySummary model={model} />
 
-        <div className="bg-[#181714] border border-[#2a2824] rounded-2xl p-6 shadow-xl relative whitespace-pre-wrap leading-relaxed">
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-xl whitespace-pre-wrap leading-relaxed text-sm text-[var(--muted)] animate-fade-in-up stagger-3">
           {report}
         </div>
 
-        <button 
+        <button
           onClick={handleCopy}
           disabled={report.startsWith("Generating")}
-          className="w-full mt-6 bg-[#25D366] hover:bg-[#1da851] text-white font-bold py-4 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+          className="w-full mt-6 bg-[#25D366] hover:bg-[#1da851] text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 btn-tap disabled:opacity-50"
         >
-          {copied ? <><Check className="w-5 h-5"/> Copied to Clipboard!</> : <><Share2 className="w-5 h-5"/> Copy to share on WhatsApp</>}
+          {copied ? <><Check className="w-5 h-5"/>Copied!</> : <><Share2 className="w-5 h-5"/>Copy for WhatsApp 📲</>}
         </button>
       </div>
     </div>

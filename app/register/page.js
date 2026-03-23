@@ -102,11 +102,11 @@ export default function RegisterInstitution() {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-[#0f0e0d] max-w-2xl mx-auto border-x border-[#2a2824] relative shadow-2xl overflow-hidden">
-      <header className="bg-[#181714] border-b border-[#2a2824] p-3 md:p-4 flex items-center gap-3 z-10 sticky top-0">
-        <div className="w-10 h-10 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f0e0d] font-bold text-xl">S</div>
+    <div className="flex flex-col h-[100dvh] bg-[var(--bg)] max-w-2xl mx-auto border-x border-[var(--border)] relative shadow-2xl overflow-hidden">
+      <header className="bg-[var(--surface)] border-b border-[var(--border)] p-3 md:p-4 flex items-center gap-3 z-10 sticky top-0">
+        <div className="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center text-[var(--bg)] font-bold text-xl">S</div>
         <div>
-          <h1 className="text-lg font-bold text-[#e8e2d9]">Institution Registration</h1>
+          <h1 className="text-lg font-bold text-[var(--text)]">Institution Registration</h1>
           <p className="text-xs text-green-500 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online
           </p>
@@ -116,14 +116,14 @@ export default function RegisterInstitution() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-[120px] scroll-smooth">
         {messages.map((m, i) => (
           <div key={i} className={`flex w-full ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${m.role === "user" ? "bg-[#c9a84c] text-[#0f0e0d] rounded-tr-sm" : "bg-[#181714] text-[#e8e2d9] border border-[#2a2824] rounded-tl-sm whitespace-pre-wrap leading-relaxed"}`}>
+            <div className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${m.role === "user" ? "bg-[var(--accent)] text-[var(--bg)] rounded-tr-sm" : "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-tl-sm whitespace-pre-wrap leading-relaxed"}`}>
               {m.content}
             </div>
           </div>
         ))}
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-[#181714] border border-[#2a2824] rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-1">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-1">
               <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
               <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
               <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
@@ -133,12 +133,12 @@ export default function RegisterInstitution() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="absolute bottom-0 w-full bg-[#181714] border-t border-[#2a2824] p-3 md:p-4">
+      <div className="absolute bottom-0 w-full bg-[var(--surface)] border-t border-[var(--border)] p-3 md:p-4">
         {!isTyping && currentStep?.id !== "done" && (
           currentStep?.type === "buttons" ? (
              <div className="flex flex-wrap gap-2 justify-center pb-2">
                {currentStep.options.map(opt => (
-                 <button key={opt} onClick={() => handleAnswer(opt)} className="bg-[#2a2824] hover:bg-[#3a3834] text-[#e8e2d9] border border-[#3a3834] px-4 py-2 rounded-full text-sm transition-colors active:scale-95">
+                 <button key={opt} onClick={() => handleAnswer(opt)} className="bg-[var(--border)] hover:bg-[var(--border)] text-[var(--text)] border border-[var(--border)] px-4 py-2 rounded-full text-sm transition-colors active:scale-95">
                    {opt}
                  </button>
                ))}
@@ -151,12 +151,12 @@ export default function RegisterInstitution() {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="Type your answer..."
-                className="flex-1 bg-[#0f0e0d] border border-[#33312c] rounded-full pl-4 pr-12 py-3 text-[#e8e2d9] focus:outline-none focus:border-[#c9a84c]"
+                className="flex-1 bg-[var(--bg)] border border-[var(--border)] rounded-full pl-4 pr-12 py-3 text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
               />
               <button
                 type="submit"
                 disabled={!inputText.trim()}
-                className="absolute right-2 bottom-2 bg-[#c9a84c] text-[#0f0e0d] p-2 rounded-full hover:bg-[#b8973b] transition-colors disabled:opacity-50"
+                className="absolute right-2 bottom-2 bg-[var(--accent)] text-[var(--bg)] p-2 rounded-full hover:bg-[var(--accent2)] transition-colors disabled:opacity-50"
               >
                 <Send className="w-4 h-4 ml-0.5" />
               </button>
@@ -165,7 +165,7 @@ export default function RegisterInstitution() {
         )}
         {currentStep?.id === "done" && (
           <div className="flex justify-center pb-2">
-            <button onClick={() => router.push(`/institution/${answers.inst_id}`)} className="bg-[#c9a84c] text-[#0f0e0d] font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-[#b8973b] transition-colors active:scale-95 flex items-center gap-2">
+            <button onClick={() => router.push(`/institution/${answers.inst_id}`)} className="bg-[var(--accent)] text-[var(--bg)] font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-[var(--accent2)] transition-colors active:scale-95 flex items-center gap-2">
               Go to Dashboard <Send className="w-4 h-4" />
             </button>
           </div>

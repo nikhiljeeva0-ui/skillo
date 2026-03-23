@@ -1,306 +1,219 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Trophy, Flame, Star, Clock } from "lucide-react";
 import { supabase } from "@/lib/learnerModel";
+import { ArrowLeft, Clock, CheckCircle, XCircle, Trophy } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Loading from "@/components/Loading";
 
-export default function DailyChallenge() {
+export default function ChallengePage() {
   const router = useRouter();
   const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [result, setResult] = useState(null);
-  const [checking, setChecking] = useState(false);
-  const [points, setPoints] = useState({ total: 0, streak: 0 });
-  const [timer, setTimer] = useState(0);
+  const [correct, setCorrect] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [points, setPoints] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
-    async function fetchChallenge() {
-      if (!supabase) {
-        setLoading(false);
-        return;
-      }
+    async function load() {
+      if (!supabase) { setLoading(false); return; }
       try {
-        const grade = parseInt(localStorage.getItem("skillo_grade")) || 9;
         const today = new Date().toISOString().split('T')[0];
+        let { data } = await supabase.from("daily_challenges").select("*").eq("date", today).limit(1);
+        if (!data?.length) { const r = await supabase.from("daily_challenges").select("*").order("date",{ascending:false}).limit(1); data = r.data; }
+        if (data?.length) setChallenge(data[0]);
 
-        // Try today's challenge
-        let { data, error } = await supabase
-          .from("daily_challenges")
-          .select("*")
-          .eq("date", today)
-          .lte("grade", grade)
-          .order("grade", { ascending: false })
-          .limit(1);
-
-        // Fallback: get latest challenge
-        if (!data || data.length === 0) {
-          const res = await supabase
-            .from("daily_challenges")
-            .select("*")
-            .lte("grade", grade)
-            .order("date", { ascending: false })
-            .limit(1);
-          data = res.data;
-        }
-
-        if (data && data.length > 0) {
-          setChallenge(data[0]);
-        }
-
-        // Fetch current points
         const userId = localStorage.getItem("skillo_user_id") || "student_001";
-        const { data: pointsData } = await supabase
-          .from("student_points")
-          .select("*")
-          .eq("user_id", userId)
-          .single();
-
-        if (pointsData) {
-          setPoints({
-            total: pointsData.total_points || 0,
-            streak: pointsData.streak_days || 0
-          });
-
-          // Check if already submitted today
-          if (pointsData.last_challenge === today) {
-            setSubmitted(true);
-            setResult({ alreadyDone: true });
-          }
-        }
-      } catch (e) {
-        console.error("Challenge fetch error:", e);
-      }
+        const { data: pts } = await supabase.from("student_points").select("*").eq("user_id", userId).single();
+        if (pts) { setPoints(pts.total_points || 0); setStreak(pts.streak_days || 0); }
+      } catch(e) { console.error(e); }
       setLoading(false);
     }
-    fetchChallenge();
+    load();
   }, []);
 
-  // Timer
   useEffect(() => {
-    if (!loading && challenge && !submitted) {
-      timerRef.current = setInterval(() => {
-        setTimer(prev => prev + 1);
-      }, 1000);
-    }
+    if (!loading && challenge && !submitted) { timerRef.current = setInterval(() => setSeconds(s => s+1), 1000); }
     return () => clearInterval(timerRef.current);
   }, [loading, challenge, submitted]);
 
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
-
   const handleSubmit = async () => {
-    if (!answer.trim() || !challenge) return;
+    if (!answer.trim()) return;
     clearInterval(timerRef.current);
-    setChecking(true);
+    setSubmitted(true);
 
-    try {
-      const userId = localStorage.getItem("skillo_user_id") || "student_001";
+    const userAns = answer.trim().toLowerCase().replace(/[^a-z0-9°]/g, '');
+    const correctAns = challenge.correct_answer.trim().toLowerCase().replace(/[^a-z0-9°]/g, '');
+    const isCorrect = userAns === correctAns || correctAns.includes(userAns) || userAns.includes(correctAns);
+    setCorrect(isCorrect);
 
-      // Use simple comparison for checking
-      const isCorrect = answer.trim().toLowerCase().replace(/[^a-z0-9°]/g, '') ===
-        challenge.correct_answer.trim().toLowerCase().replace(/[^a-z0-9°]/g, '');
-
-      const today = new Date().toISOString().split('T')[0];
-
-      if (supabase) {
-        if (isCorrect) {
-          // Get current points
-          const { data: existing } = await supabase
-            .from("student_points")
-            .select("*")
-            .eq("user_id", userId)
-            .single();
-
-          let newStreak = 1;
-          let newTotal = challenge.points || 10;
-
-          if (existing) {
-            newTotal = (existing.total_points || 0) + (challenge.points || 10);
-            const lastChallenge = existing.last_challenge;
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-            if (lastChallenge === yesterdayStr) {
-              newStreak = (existing.streak_days || 0) + 1;
-            } else if (lastChallenge === today) {
-              newStreak = existing.streak_days || 1;
-            }
-
-            // Check badges
-            let badges = existing.badges || [];
-            if (newStreak >= 7 && !badges.includes("7_day_streak")) {
-              badges = [...badges, "7_day_streak"];
-            }
-
-            await supabase.from("student_points").upsert({
-              user_id: userId,
-              total_points: newTotal,
-              streak_days: newStreak,
-              last_challenge: today,
-              badges
-            }, { onConflict: "user_id" });
-
-            setPoints({ total: newTotal, streak: newStreak });
-          } else {
-            await supabase.from("student_points").insert({
-              user_id: userId,
-              total_points: newTotal,
-              streak_days: 1,
-              last_challenge: today,
-              badges: []
-            });
-            setPoints({ total: newTotal, streak: 1 });
-          }
-        }
-
-        setResult({
-          isCorrect,
-          pointsEarned: isCorrect ? (challenge.points || 10) : 0,
-          timeTaken: timer
-        });
-      }
-    } catch (e) {
-      console.error("Submit error:", e);
-      alert("Error submitting answer. Try again.");
+    if (isCorrect) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
     }
 
-    setChecking(false);
-    setSubmitted(true);
+    const userId = localStorage.getItem("skillo_user_id") || "student_001";
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existing } = await supabase.from("student_points").select("*").eq("user_id", userId).single();
+
+      if (existing) {
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+        const yDate = yesterday.toISOString().split('T')[0];
+        let newStreak = existing.streak_days || 0;
+        if (existing.last_challenge === yDate) newStreak++;
+        else if (existing.last_challenge !== today) newStreak = 1;
+
+        await supabase.from("student_points").update({
+          total_points: (existing.total_points||0) + (isCorrect ? (challenge.points||10) : 0),
+          streak_days: newStreak,
+          last_challenge: today
+        }).eq("user_id", userId);
+        setPoints((existing.total_points||0)+(isCorrect?(challenge.points||10):0));
+        setStreak(newStreak);
+      } else {
+        const newP = isCorrect ? (challenge.points||10) : 0;
+        await supabase.from("student_points").insert({ user_id: userId, total_points: newP, streak_days: 1, last_challenge: today, badges: [] });
+        setPoints(newP); setStreak(1);
+      }
+    } catch(e) { console.error(e); }
+  };
+
+  const formatTime = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+
+  // Calculate time until next challenge (midnight)
+  const getTimeUntilMidnight = () => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setDate(midnight.getDate() + 1);
+    midnight.setHours(0,0,0,0);
+    const diff = midnight - now;
+    const h = Math.floor(diff/(1000*60*60));
+    const m = Math.floor((diff%(1000*60*60))/(1000*60));
+    return `${h}h ${m}m`;
   };
 
   if (loading) return <Loading />;
+  if (!challenge) return (
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col items-center justify-center p-4 text-center">
+      <div className="text-5xl mb-4">🎯</div>
+      <p className="text-xl font-bold mb-2" style={{fontFamily:"var(--font-heading)"}}>No challenge today</p>
+      <p className="text-sm text-[var(--muted)] mb-6">Check back tomorrow!</p>
+      <button onClick={()=>router.push("/chat")} className="bg-[var(--accent)] text-[var(--bg)] px-6 py-2.5 rounded-xl font-bold btn-tap">Back to Chat</button>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] p-4 md:p-8">
-      <div className="max-w-md mx-auto">
-        <header className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => router.push("/chat")} className="p-2 bg-[#181714] rounded-full hover:bg-[#2a2824] transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold tracking-tight">Daily Challenge</h1>
-          </div>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-4 md:p-8 flex justify-center">
+      {/* Confetti */}
+      {showConfetti && [...Array(20)].map((_,i) => (
+        <div key={i} className="confetti-piece" style={{
+          left: `${Math.random()*100}%`,
+          background: ['#f5a623','#22c55e','#3b82f6','#ef4444','#e8834a'][i%5],
+          animationDelay: `${Math.random()*0.5}s`,
+          borderRadius: Math.random()>0.5?'50%':'2px',
+          width: `${6+Math.random()*6}px`,
+          height: `${6+Math.random()*6}px`
+        }} />
+      ))}
 
-          {/* Stats bar */}
-          <div className="flex gap-3">
-            <div className="flex-1 bg-[#181714] border border-[#2a2824] rounded-xl px-4 py-3 flex items-center gap-2">
-              <Flame className="w-5 h-5 text-orange-400" />
-              <div>
-                <p className="text-xs text-gray-500">Streak</p>
-                <p className="font-bold text-lg leading-none">{points.streak} days</p>
-              </div>
-            </div>
-            <div className="flex-1 bg-[#181714] border border-[#2a2824] rounded-xl px-4 py-3 flex items-center gap-2">
-              <Star className="w-5 h-5 text-[#c9a84c]" />
-              <div>
-                <p className="text-xs text-gray-500">Points</p>
-                <p className="font-bold text-lg leading-none">{points.total}</p>
-              </div>
-            </div>
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <header className="flex items-center justify-between mb-8">
+          <button onClick={()=>router.push("/chat")} className="p-2 bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:bg-[var(--surface2)] transition"><ArrowLeft className="w-5 h-5" /></button>
+          <h1 className="text-xl font-extrabold" style={{fontFamily:"var(--font-heading)"}}>Daily Challenge 🎯</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-xs bg-[var(--accent)]/10 text-[var(--accent)] px-2.5 py-1 rounded-lg font-semibold border border-[var(--accent)]/20">🔥 {streak}</span>
+            <span className="text-xs bg-[var(--accent2)]/10 text-[var(--accent2)] px-2.5 py-1 rounded-lg font-semibold border border-[var(--accent2)]/20">⭐ {points}</span>
           </div>
         </header>
 
-        {!challenge ? (
-          <div className="text-center py-16 bg-[#181714] border border-[#2a2824] rounded-2xl">
-            <p className="text-xl mb-2">No challenge available</p>
-            <p className="text-gray-400 text-sm">Check back tomorrow! 📚</p>
-          </div>
-        ) : submitted && result ? (
-          /* Result view */
-          <div className="space-y-6">
-            {result.alreadyDone ? (
-              <div className="bg-[#181714] border border-[#2a2824] rounded-2xl p-8 text-center">
-                <div className="text-4xl mb-4">✅</div>
-                <h2 className="text-xl font-bold mb-2">Already Done!</h2>
-                <p className="text-gray-400">You already completed today&apos;s challenge. Come back tomorrow!</p>
-              </div>
-            ) : result.isCorrect ? (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-8 text-center">
-                <div className="text-5xl mb-4">🎉</div>
-                <h2 className="text-2xl font-bold text-emerald-400 mb-2">Sahi hai!</h2>
-                <p className="text-[#c9a84c] font-semibold text-lg mb-1">+{result.pointsEarned} points</p>
-                <p className="text-gray-400 text-sm">Time: {formatTime(result.timeTaken)}</p>
-              </div>
-            ) : (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 text-center">
-                <div className="text-5xl mb-4">❌</div>
-                <h2 className="text-2xl font-bold text-red-400 mb-2">Galat</h2>
-                <div className="mt-4 text-left bg-[#181714] rounded-xl p-4 border border-[#2a2824]">
-                  <p className="text-gray-400 text-sm mb-1">Sahi answer:</p>
-                  <p className="text-emerald-400 font-medium">{challenge.correct_answer}</p>
-                </div>
-              </div>
-            )}
+        {!submitted ? (
+          <div className="animate-fade-in-up">
+            {/* Timer */}
+            <div className="flex items-center justify-center gap-2 mb-6 text-[var(--muted)]">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-mono font-semibold">{formatTime(seconds)}</span>
+            </div>
 
-            {!result.alreadyDone && (
-              <div className="bg-[#181714] border border-[#2a2824] rounded-2xl p-6">
-                <h3 className="font-semibold text-[#c9a84c] mb-2">📝 Explanation</h3>
-                <p className="text-gray-300 leading-relaxed">{challenge.explanation}</p>
-              </div>
-            )}
+            {/* Question card */}
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 md:p-8 mb-6 shadow-xl">
+              <span className="text-xs bg-[var(--blue)]/10 text-[var(--blue)] px-2.5 py-1 rounded-full font-medium capitalize border border-[var(--blue)]/20">{challenge.subject}</span>
+              <p className="text-lg font-semibold mt-5 leading-relaxed" style={{fontFamily:"var(--font-heading)"}}>{challenge.question}</p>
+            </div>
 
-            <div className="flex flex-col gap-3">
-              <button onClick={() => router.push("/leaderboard")} className="w-full bg-[#c9a84c] text-[#0f0e0d] font-bold py-4 rounded-full hover:bg-[#b8973b] transition-colors active:scale-[0.98]">
-                🏆 View Leaderboard
-              </button>
-              <button onClick={() => router.push("/chat")} className="w-full bg-[#2a2824] text-[#e8e2d9] font-medium py-3 rounded-full hover:bg-[#3a3834] transition-colors">
-                ← Back to Chat
+            {/* Answer */}
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={answer}
+                onChange={(e)=>setAnswer(e.target.value)}
+                onKeyDown={(e)=>{if(e.key==='Enter')handleSubmit();}}
+                placeholder="Type your answer..."
+                className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl px-5 py-4 text-base text-[var(--text)] placeholder:text-[var(--muted)]/40"
+                autoFocus
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={!answer.trim()}
+                className="w-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] font-bold py-4 rounded-2xl text-base hover:brightness-110 transition disabled:opacity-30 btn-tap shadow-[0_4px_20px_rgba(245,166,35,0.2)]"
+              >
+                Submit Answer
               </button>
             </div>
           </div>
         ) : (
-          /* Question view */
-          <div className="space-y-6">
-            <div className="bg-[#181714] border border-[#2a2824] rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-xs bg-[#c9a84c]/20 text-[#c9a84c] px-3 py-1 rounded-full font-medium">
-                  {challenge.subject} • Class {challenge.grade}
-                </span>
-                <div className="flex items-center gap-1.5 text-sm text-gray-400">
-                  <Clock className="w-4 h-4" />
-                  {formatTime(timer)}
-                </div>
+          <div className={`animate-fade-in-up ${!correct ? 'animate-shake' : ''}`}>
+            {/* Result */}
+            <div className={`rounded-2xl p-8 text-center mb-6 border ${correct ? 'bg-[var(--green)]/5 border-[var(--green)]/20' : 'bg-[var(--red)]/5 border-[var(--red)]/20'}`}>
+              {correct ? (
+                <>
+                  <CheckCircle className="w-16 h-16 mx-auto text-[var(--green)] mb-4" />
+                  <h2 className="text-2xl font-extrabold text-[var(--green)] mb-2" style={{fontFamily:"var(--font-heading)"}}>🎉 Sahi hai!</h2>
+                  <p className="text-[var(--green)] font-semibold">+{challenge.points || 10} points</p>
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-16 h-16 mx-auto text-[var(--red)] mb-4" />
+                  <h2 className="text-2xl font-extrabold text-[var(--red)] mb-2" style={{fontFamily:"var(--font-heading)"}}>❌ Not quite!</h2>
+                  <p className="text-sm text-[var(--muted)] mt-2">Correct answer: <span className="text-[var(--text)] font-semibold">{challenge.correct_answer}</span></p>
+                </>
+              )}
+            </div>
+
+            {/* Explanation */}
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 mb-6">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5" style={{fontFamily:"var(--font-heading)"}}>💡 Explanation</h3>
+              <p className="text-sm text-[var(--muted)] leading-relaxed">{challenge.explanation}</p>
+            </div>
+
+            {/* Time + stats */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-center">
+                <p className="text-lg font-bold" style={{fontFamily:"var(--font-heading)"}}>{formatTime(seconds)}</p>
+                <p className="text-[10px] text-[var(--muted)]">Time</p>
               </div>
-
-              <h2 className="text-xl font-semibold leading-relaxed mb-2">
-                🤔 Question of the Day
-              </h2>
-              <p className="text-gray-200 text-lg leading-relaxed mt-4">
-                {challenge.question}
-              </p>
-
-              <div className="mt-2 text-right">
-                <span className="text-xs text-[#c9a84c]">+{challenge.points || 10} points</span>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-[var(--accent)]" style={{fontFamily:"var(--font-heading)"}}>🔥 {streak}</p>
+                <p className="text-[10px] text-[var(--muted)]">Streak</p>
+              </div>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-[var(--accent2)]" style={{fontFamily:"var(--font-heading)"}}>⭐ {points}</p>
+                <p className="text-[10px] text-[var(--muted)]">Points</p>
               </div>
             </div>
 
-            <div>
-              <input
-                type="text"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type your answer..."
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                className="w-full bg-[#181714] border border-[#2a2824] rounded-xl px-4 py-4 text-[#e8e2d9] text-lg focus:outline-none focus:border-[#c9a84c] placeholder:text-gray-600"
-              />
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 text-center mb-4">
+              <p className="text-xs text-[var(--muted)]">Next challenge in <span className="text-[var(--accent)] font-semibold">{getTimeUntilMidnight()}</span></p>
             </div>
 
-            <button
-              onClick={handleSubmit}
-              disabled={checking || !answer.trim()}
-              className="w-full bg-[#c9a84c] text-[#0f0e0d] font-bold py-4 rounded-full hover:bg-[#b8973b] transition-colors shadow-lg active:scale-[0.98] disabled:opacity-50 text-lg"
-            >
-              {checking ? "Checking... ⏳" : "Submit Answer"}
+            <button onClick={()=>router.push("/chat")} className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] font-semibold py-3 rounded-xl hover:bg-[var(--surface2)] transition btn-tap text-sm">
+              Back to Chat
             </button>
           </div>
         )}

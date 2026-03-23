@@ -52,7 +52,7 @@ export default function TeacherReports() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] p-4 md:p-8">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-4 md:p-8">
       <div className="max-w-5xl mx-auto relative">
         <TeacherHeader active="reports" />
         
@@ -61,23 +61,23 @@ export default function TeacherReports() {
         </header>
 
         {loading ? (
-          <div className="flex justify-center p-12"><div className="w-8 h-8 rounded-full border-4 border-[#c9a84c] border-t-transparent animate-spin"></div></div>
+          <div className="flex justify-center p-12"><div className="w-8 h-8 rounded-full border-4 border-[var(--accent)] border-t-transparent animate-spin"></div></div>
         ) : students.length === 0 ? (
-          <div className="text-center p-12 bg-[#181714] border border-[#2a2824] rounded-2xl">
+          <div className="text-center p-12 bg-[var(--surface)] border border-[var(--border)] rounded-2xl">
             <h2 className="text-xl font-medium mb-2">No students yet.</h2>
-            <p className="text-gray-400">Share the app link with students to get started.</p>
+            <p className="text-[var(--muted)]">Share the app link with students to get started.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
             {students.map(s => (
-              <div key={s.id} className="bg-[#181714] border border-[#2a2824] rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div key={s.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-lg">{s.name}</h3>
-                  <p className="text-sm text-gray-400">Class {s.grade}</p>
+                  <p className="text-sm text-[var(--muted)]">Class {s.grade}</p>
                 </div>
                 <button 
                   onClick={() => handleGenerate(s.id, s.name)}
-                  className="bg-[#2a2824] hover:bg-[#3a3834] text-[#c9a84c] px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  className="bg-[var(--border)] hover:bg-[var(--border)] text-[var(--accent)] px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <FileText className="w-4 h-4"/> Generate Report
                 </button>
@@ -89,21 +89,21 @@ export default function TeacherReports() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-[#181714] border border-[#3a3834] rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-[#2a2824] flex justify-between items-center bg-[#1f1e1a]">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--surface2)]">
               <h2 className="font-semibold flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#c9a84c]" />
+                <FileText className="w-4 h-4 text-[var(--accent)]" />
                 {activeStudentName}&apos;s Report
               </h2>
-              <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+              <button onClick={() => setModalOpen(false)} className="text-[var(--muted)] hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5 overflow-y-auto flex-1 bg-[#0f0e0d] whitespace-pre-wrap leading-relaxed">
+            <div className="p-5 overflow-y-auto flex-1 bg-[var(--bg)] whitespace-pre-wrap leading-relaxed">
               {reportContent}
             </div>
             {reportContent !== "Generating report..." && !reportContent.startsWith("Error") && (
-              <div className="p-4 border-t border-[#2a2824] bg-[#1f1e1a]">
+              <div className="p-4 border-t border-[var(--border)] bg-[var(--surface2)]">
                 <button 
                   onClick={copyReport}
                   className="w-full bg-[#25D366] hover:bg-[#1da851] text-white font-bold py-3 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"

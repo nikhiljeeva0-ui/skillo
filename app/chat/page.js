@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Send } from "lucide-react";
+import { Send, ArrowUp } from "lucide-react";
 import Loading from "@/components/Loading";
 
 export default function Chat() {
@@ -12,32 +12,24 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState(false);
-  const [studentInfo, setStudentInfo] = useState({ name: "", grade: "" });
+  const [studentInfo, setStudentInfo] = useState({ name: "", grade: "", streak: 0 });
   const messagesEndRef = useRef(null);
-
-  // Extraction mechanics
   const messagesRef = useRef(messages);
   const lastExtractedLen = useRef(1);
   const typingTimer = useRef(null);
 
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const triggerExtraction = async () => {
     const currentMsgs = messagesRef.current;
     if (currentMsgs.length < 2) return;
-    
     try {
       await fetch("/api/extract", {
-        method: "POST",
-        keepalive: true,
+        method: "POST", keepalive: true,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: currentMsgs, userId: "student_001" })
       });
-    } catch (e) {
-      console.error("Silent extraction failed", e);
-    }
+    } catch (e) { console.error("Extraction failed", e); }
   };
 
   useEffect(() => {
@@ -56,9 +48,7 @@ export default function Chat() {
   useEffect(() => {
     clearTimeout(typingTimer.current);
     if (messages.length > 1) {
-      typingTimer.current = setTimeout(() => {
-        triggerExtraction();
-      }, 2 * 60 * 1000);
+      typingTimer.current = setTimeout(() => triggerExtraction(), 2 * 60 * 1000);
     }
     return () => clearTimeout(typingTimer.current);
   }, [input, messages]);
@@ -67,255 +57,198 @@ export default function Chat() {
     const name = localStorage.getItem("skillo_name");
     const grade = localStorage.getItem("skillo_grade");
     const lang = localStorage.getItem("skillo_lang");
-
-    if (!name) {
-      router.push("/onboard");
-      return;
-    }
+    if (!name) { router.push("/onboard"); return; }
 
     const savedUserId = localStorage.getItem("skillo_user_id") || "student_001";
-    setStudentInfo({ name, grade, userId: savedUserId });
-
     const isHi = lang === "हिंदी" || lang === "hi";
-    
-    // Memory-aware welcome message
+
+    // Memory-aware welcome
     const modelStr = localStorage.getItem("skillo_learner_model");
     let initialMsg = isHi
       ? `नमस्ते ${name}! मैं Skillo हूँ। आज से हम साथ पढ़ेंगे! आज क्या पढ़ना है? 😊`
       : `Namaste ${name}! I'm Skillo. Let's start your learning journey! What shall we study today? 😊`;
+    let streak = 0;
 
     if (modelStr) {
       try {
         const model = JSON.parse(modelStr);
         const sessions = model.sessionStats?.totalSessions || 0;
-        const streak = model.sessionStats?.streakDays || 0;
+        streak = model.sessionStats?.streakDays || 0;
         const lastSeen = model.sessionStats?.lastSeen;
         const topics = model.subjects?.maths?.topics || {};
-        
-        const shakyTopics = Object.entries(topics)
-          .filter(([_, v]) => v.status === 'shaky')
-          .map(([k]) => k);
+        const shakyTopics = Object.entries(topics).filter(([_,v]) => v.status === 'shaky').map(([k]) => k);
+        const daysSince = lastSeen ? Math.floor((new Date() - new Date(lastSeen)) / (1000*60*60*24)) : null;
 
-        const daysSince = lastSeen ?
-          Math.floor((new Date() - new Date(lastSeen)) / (1000 * 60 * 60 * 24)) : null;
-
-        // New student
         if (sessions === 0) {
+          initialMsg = isHi ? `नमस्ते ${name}! मैं Skillo हूँ। आज से हम साथ पढ़ेंगे! आज क्या पढ़ना है? 😊` : `Namaste ${name}! I'm Skillo. Let's start your learning journey! What shall we study today? 😊`;
+        } else if (daysSince > 2) {
           initialMsg = isHi
-            ? `नमस्ते ${name}! मैं Skillo हूँ। आज से हम साथ पढ़ेंगे! आज क्या पढ़ना है? 😊`
-            : `Namaste ${name}! I'm Skillo. Let's start your learning journey! What shall we study today? 😊`;
-        }
-        // Returning after gap
-        else if (daysSince > 2) {
+            ? `वापस आए ${name}! ${daysSince} दिन बाद! ${shakyTopics.length > 0 ? `पिछली बार ${shakyTopics[0]} में थोड़ी problem थी। आज उसे fix करें? 💪` : 'आज क्या पढ़ना है?'}`
+            : `Welcome back ${name}! ${daysSince} days later! ${shakyTopics.length > 0 ? `Last time you struggled with ${shakyTopics[0]}. Want to fix that today? 💪` : 'What shall we study today?'}`;
+        } else if (streak >= 3) {
+          initialMsg = isHi ? `शाबाश ${name}! 🔥 ${streak} दिन streak! आज क्या पढ़ना है?` : `Amazing ${name}! 🔥 ${streak} day streak! What shall we study today?`;
+        } else if (sessions > 0) {
           initialMsg = isHi
-            ? `वापस आए ${name}! ${daysSince} दिन बाद! ${shakyTopics.length > 0
-                ? `पिछली बार ${shakyTopics[0]} में थोड़ी problem थी। आज उसे fix करें? 💪`
-                : 'आज क्या पढ़ना है?'}`
-            : `Welcome back ${name}! ${daysSince} days later! ${shakyTopics.length > 0
-                ? `Last time you struggled with ${shakyTopics[0]}. Want to fix that today? 💪`
-                : 'What shall we study today?'}`;
-        }
-        // Streak message
-        else if (streak >= 3) {
-          initialMsg = isHi
-            ? `शाबाश ${name}! 🔥 ${streak} दिन streak! आज भी पढ़ने आए — great habit! आज क्या पढ़ना है?`
-            : `Amazing ${name}! 🔥 ${streak} day streak! Great habit! What shall we study today?`;
-        }
-        // Default returning student
-        else if (sessions > 0) {
-          initialMsg = isHi
-            ? `नमस्ते ${name}! ${shakyTopics.length > 0
-                ? `आज ${shakyTopics[0]} practice करें? 📚`
-                : 'आज क्या पढ़ना है? 😊'}`
-            : `Namaste ${name}! ${shakyTopics.length > 0
-                ? `Shall we practice ${shakyTopics[0]} today? 📚`
-                : 'What shall we study today? 😊'}`;
+            ? `नमस्ते ${name}! ${shakyTopics.length > 0 ? `आज ${shakyTopics[0]} practice करें? 📚` : 'आज क्या पढ़ना है? 😊'}`
+            : `Namaste ${name}! ${shakyTopics.length > 0 ? `Shall we practice ${shakyTopics[0]} today? 📚` : 'What shall we study today? 😊'}`;
         }
 
-        // Append spaced repetition topics
         const { getTopicsForToday } = require("@/lib/spacedRepetition");
         const reviewTopics = getTopicsForToday(model);
         if (reviewTopics.length > 0) {
-          if (isHi) {
-            initialMsg += `\n\n📚 आज review करने के लिए:\n${reviewTopics.map(t => `- ${t}`).join("\n")}\nक्या इनसे शुरू करें?`;
-          } else {
-            initialMsg += `\n\n📚 Topics to review today:\n${reviewTopics.map(t => `- ${t}`).join("\n")}\nShall we start with these?`;
-          }
+          initialMsg += isHi
+            ? `\n\n📚 आज review: ${reviewTopics.join(", ")}`
+            : `\n\n📚 Review today: ${reviewTopics.join(", ")}`;
         }
-      } catch(e) {
-        console.error("Memory load error:", e);
-      }
+      } catch(e) { console.error("Memory error:", e); }
     }
 
-    setMessages([{ role: "assistant", content: initialMsg }]);
+    setStudentInfo({ name, grade, userId: savedUserId, streak });
+    setMessages([{ role: "assistant", content: initialMsg, time: new Date() }]);
     setPageLoading(false);
   }, [router]);
 
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isLoading]);
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!input.trim() || isLoading) return;
-
     const userMsg = input.trim();
     setInput("");
     const userId = studentInfo.userId || "student_001";
-    const newMessages = [...messages, { role: "user", content: userMsg }];
+    const newMessages = [...messages, { role: "user", content: userMsg, time: new Date() }];
     setMessages(newMessages);
     localStorage.setItem(`skillo_chat_history_${userId}`, JSON.stringify(newMessages));
     setIsLoading(true);
 
     try {
       const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-          userId: studentInfo.userId || "student_001",
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })), userId })
       });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || "API error");
-      }
-
+      if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.error || "API error"); }
       const text = await response.text();
-      const botMessages = [...newMessages, { role: "assistant", content: text }];
+      const botMessages = [...newMessages, { role: "assistant", content: text, time: new Date() }];
       setMessages(botMessages);
-      localStorage.setItem(`skillo_chat_history_${studentInfo.userId || "student_001"}`, JSON.stringify(botMessages));
+      localStorage.setItem(`skillo_chat_history_${userId}`, JSON.stringify(botMessages));
     } catch (error) {
       console.error(error);
-      setPageError(error.message || "Thodi si problem aayi. Dobara try karo! 🔄");
-    } finally {
-      setIsLoading(false);
-    }
+      setPageError(error.message || "Something went wrong");
+    } finally { setIsLoading(false); }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
+  const handleKeyDown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } };
+
+  const formatTime = (d) => { if (!d) return ''; const t = new Date(d); return t.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); };
+
+  // Suggested topics for empty chat
+  const suggestedTopics = ["Triangles", "Polynomials", "Probability", "Linear Equations"];
 
   if (pageLoading) return <Loading />;
   if (pageError) return (
-    <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] flex flex-col items-center justify-center p-4 text-center">
-      <p className="text-xl mb-2">Oops! Thodi si problem aayi.</p>
-      <p className="text-sm text-red-400 mb-6 bg-[#181714] p-3 rounded-lg border border-red-900/30 max-w-sm">
-        {typeof pageError === "string" ? pageError : "API error. Dobara try karo! 🔄"}
-      </p>
-      <button onClick={() => window.location.reload()} className="bg-[#c9a84c] text-[#0f0e0d] px-8 py-3 rounded-full font-bold shadow-lg hover:bg-[#b8973b] transition-colors">Retry</button>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col items-center justify-center p-4 text-center">
+      <p className="text-xl mb-2" style={{fontFamily:"var(--font-heading)"}}>Oops!</p>
+      <p className="text-sm text-[var(--red)] mb-6 bg-[var(--surface)] p-3 rounded-2xl border border-[var(--red)]/20 max-w-sm">{typeof pageError === "string" ? pageError : "Something went wrong"}</p>
+      <button onClick={() => window.location.reload()} className="bg-[var(--accent)] text-[var(--bg)] px-8 py-3 rounded-xl font-bold btn-tap">Retry</button>
     </div>
   );
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-[#0f0e0d] max-w-2xl mx-auto border-x border-[#2a2824] relative shadow-2xl overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-[var(--bg)] max-w-2xl mx-auto border-x border-[var(--border)] relative overflow-hidden">
       {/* Header */}
-      <header className="bg-[#181714] border-b border-[#2a2824] p-3 md:p-4 flex items-center justify-between z-10 sticky top-0">
+      <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center justify-between z-10 sticky top-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f0e0d] font-bold text-xl shadow-lg">
-            S
-          </div>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)] flex items-center justify-center text-[var(--bg)] font-extrabold text-lg shadow-lg" style={{fontFamily:"var(--font-heading)"}}>S</div>
           <div>
-            <h1 className="text-lg font-bold text-[#e8e2d9]">Skillo</h1>
-            <p className="text-xs text-green-500 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online
-            </p>
+            <h1 className="text-base font-bold" style={{fontFamily:"var(--font-heading)"}}>Skillo</h1>
+            <p className="text-[10px] text-[var(--green)] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[var(--green)]"></span>Online</p>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <button 
-            onClick={() => window.open("/report", "_blank")}
-            className="text-xs flex items-center gap-1 bg-[#2a2824] px-2 py-1 rounded-md text-[#c9a84c] border border-[#3a3834] hover:bg-[#3a3834] transition-colors"
-          >
-            📋 Report
-          </button>
-          <div className="text-right">
-            <p className="text-sm font-medium text-[#c9a84c] leading-none mb-1">{studentInfo.name}</p>
-            <p className="text-xs text-gray-400 leading-none">Class {studentInfo.grade}</p>
+        <div className="flex items-center gap-3">
+          {studentInfo.streak > 0 && (
+            <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--accent)] flex items-center gap-1">🔥 {studentInfo.streak}</div>
+          )}
+          <button onClick={() => window.open("/report","_blank")} className="text-xs bg-[var(--surface2)] px-2.5 py-1.5 rounded-lg text-[var(--muted)] border border-[var(--border)] hover:text-[var(--text)] transition-colors">📋 Report</button>
+          <div className="text-right hidden sm:block">
+            <p className="text-xs font-semibold text-[var(--accent)]">{studentInfo.name}</p>
+            <p className="text-[10px] text-[var(--muted)]">Class {studentInfo.grade}</p>
           </div>
         </div>
       </header>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0f0e0d] pb-[140px] scroll-smooth">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-[140px]">
         {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex w-full ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
+          <div key={i} className={`flex w-full ${m.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
+            <div className="flex flex-col gap-1">
+              <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 m.role === "user"
-                  ? "bg-[#c9a84c] text-[#0f0e0d] rounded-tr-sm"
-                  : "bg-[#181714] text-[#e8e2d9] border border-[#2a2824] rounded-tl-sm whitespace-pre-wrap leading-relaxed"
-              }`}
-            >
-              {m.content}
+                  ? "bg-[var(--accent)]/12 border border-[var(--accent)]/20 text-[var(--text)] rounded-tr-sm"
+                  : "bg-[var(--surface2)] border border-[var(--border)] text-[var(--muted)] rounded-tl-sm whitespace-pre-wrap"
+              }`}>{m.content}</div>
+              <span className={`text-[10px] text-[var(--muted)]/50 ${m.role === "user" ? "text-right" : "text-left"} px-1`}>{formatTime(m.time)}</span>
             </div>
           </div>
         ))}
+
+        {/* Suggested topics for new student */}
+        {messages.length === 1 && (
+          <div className="animate-fade-in-up stagger-2">
+            <p className="text-xs text-[var(--muted)] mb-2 ml-1">Try asking about:</p>
+            <div className="flex flex-wrap gap-2">
+              {suggestedTopics.map(t => (
+                <button key={t} onClick={() => setInput(t)} className="text-xs bg-[var(--surface)] border border-[var(--border)] px-3 py-1.5 rounded-full text-[var(--accent)] hover:bg-[var(--accent)]/10 hover:border-[var(--accent)]/20 transition btn-tap">
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-[#181714] border border-[#2a2824] rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-1 shadow-md">
-              <span className="flex gap-1">
-                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
-              </span>
+          <div className="flex justify-start animate-fade-in">
+            <div className="bg-[var(--surface2)] border border-[var(--border)] rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-1.5">
+              {[0,1,2].map(i => (
+                <span key={i} className="w-2 h-2 rounded-full bg-[var(--accent)]" style={{ animation: 'bounce-dot 1s infinite', animationDelay: `${i*150}ms` }}></span>
+              ))}
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions + Input Area */}
-      <div className="absolute bottom-0 w-full bg-[#181714] border-t border-[#2a2824]">
-        {/* Quick action buttons */}
-        <div className="flex items-center justify-center gap-2 px-3 pt-2 pb-1">
-          <button
-            onClick={() => router.push("/challenge")}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#0f0e0d] border border-[#2a2824] rounded-full text-xs text-[#c9a84c] hover:bg-[#2a2824] transition-colors active:scale-95"
-          >
-            📝 Daily Challenge
-          </button>
-          <button
-            onClick={() => router.push("/leaderboard")}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#0f0e0d] border border-[#2a2824] rounded-full text-xs text-[#c9a84c] hover:bg-[#2a2824] transition-colors active:scale-95"
-          >
-            🏆 Leaderboard
-          </button>
-          <button
-            onClick={() => router.push("/report")}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#0f0e0d] border border-[#2a2824] rounded-full text-xs text-[#c9a84c] hover:bg-[#2a2824] transition-colors active:scale-95"
-          >
-            📊 My Progress
-          </button>
+      {/* Bottom */}
+      <div className="absolute bottom-0 w-full bg-[var(--surface)] border-t border-[var(--border)]">
+        {/* Quick actions */}
+        <div className="flex items-center justify-center gap-2 px-3 pt-2.5 pb-1">
+          {[
+            { label: "📝 Challenge", href: "/challenge" },
+            { label: "🏆 Leaderboard", href: "/leaderboard" },
+            { label: "📊 Progress", href: "/report" }
+          ].map(a => (
+            <button key={a.href} onClick={() => router.push(a.href)} className="px-3 py-1.5 bg-[var(--bg)] border border-[var(--border)] rounded-full text-[10px] font-medium text-[var(--accent)] hover:bg-[var(--accent)]/5 transition btn-tap">
+              {a.label}
+            </button>
+          ))}
         </div>
 
-        {/* Input */}
-        <div className="p-3 md:p-4 pt-1">
-          <form onSubmit={handleSubmit} className="flex gap-2 max-w-2xl mx-auto relative items-center">
+        <div className="p-3 pt-1">
+          <form onSubmit={handleSubmit} className="flex gap-2 items-end relative">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={localStorage.getItem("skillo_lang") === "हिंदी" ? "कुछ भी पूछो..." : "Type a message..."}
-              className="flex-1 resize-none bg-[#0f0e0d] border border-[#33312c] rounded-2xl pl-4 pr-12 py-3 text-[#e8e2d9] focus:outline-none focus:border-[#c9a84c] max-h-32 min-h-[50px] flex items-center"
+              placeholder={localStorage.getItem("skillo_lang") === "hi" ? "कुछ भी पूछो..." : "Type a message..."}
+              className="flex-1 resize-none bg-[var(--bg)] border border-[var(--border)] rounded-2xl pl-4 pr-12 py-3 text-sm text-[var(--text)] placeholder:text-[var(--muted)]/40 max-h-32 min-h-[48px]"
               rows="1"
               style={{ overflowY: input.split("\n").length > 2 ? "auto" : "hidden" }}
             />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="absolute right-2 bottom-3 mb-0.5 bg-[#c9a84c] text-[#0f0e0d] p-2 rounded-full hover:bg-[#b8973b] transition-colors disabled:opacity-50 disabled:hover:bg-[#c9a84c] transform active:scale-90 flex items-center"
+              className="absolute right-2 bottom-2 bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] w-9 h-9 rounded-xl flex items-center justify-center hover:brightness-110 transition disabled:opacity-30 btn-tap"
             >
-              {localStorage.getItem("skillo_lang") === "हिंदी" ? <span className="text-xs px-1 font-bold">भेजो</span> : <Send className="w-5 h-5 -ml-0.5 mt-0.5" />}
+              <ArrowUp className="w-4 h-4" />
             </button>
           </form>
         </div>
