@@ -9,12 +9,28 @@ import Loading from "@/components/Loading";
 const statusDot = { green: "bg-[var(--green)]", amber: "bg-amber-500", red: "bg-[var(--red)]" };
 
 export function TeacherHeader({ active }) {
+  const tabs = [
+    { id: 'students', label: 'Dashboard', href: '/teacher' },
+    { id: 'reports', label: 'Reports', href: '/teacher/reports' },
+    { id: 'assignments', label: 'Assignments', href: '/teacher?tab=assignments' },
+    { id: 'analytics', label: 'Analytics', href: '/teacher?tab=analytics' }
+  ];
+
   return (
-    <div className="flex gap-4 text-sm mb-6 pb-4 border-b border-[var(--border)] items-center flex-wrap">
-      <a href="/teacher" className={active === 'students' ? 'text-[var(--accent)] font-semibold' : 'text-[var(--muted)] hover:text-[var(--text)]'}>Students</a>
-      <a href="/teacher/reports" className={active === 'reports' ? 'text-[var(--accent)] font-semibold' : 'text-[var(--muted)] hover:text-[var(--text)]'}>Reports</a>
-      <a href="/teacher?tab=assignments" className={active === 'assignments' ? 'text-[var(--accent)] font-semibold' : 'text-[var(--muted)] hover:text-[var(--text)]'}>Assignments</a>
-      <a href="/teacher?tab=analytics" className={active === 'analytics' ? 'text-[var(--accent)] font-semibold' : 'text-[var(--muted)] hover:text-[var(--text)]'}>Analytics</a>
+    <div className="flex gap-2 sm:gap-3 text-sm mb-8 pb-4 items-center flex-wrap overflow-x-auto">
+      {tabs.map(t => (
+        <a 
+          key={t.id} 
+          href={t.href} 
+          className={`px-5 py-2.5 rounded-2xl font-semibold transition-all duration-300 whitespace-nowrap ${
+            active === t.id 
+            ? 'bg-gradient-to-b from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] shadow-[0_4px_0_0_#b37318] translate-y-[-2px]' 
+            : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--surface2)] hover:text-[var(--text)] hover:shadow-[0_2px_0_0_var(--border)]'
+          }`}
+        >
+          {t.label}
+        </a>
+      ))}
     </div>
   );
 }
@@ -61,20 +77,32 @@ function AssignmentsTab() {
     setSubLoading(false);
   };
 
-  if (loading) return <div className="text-center py-12 text-[var(--muted)]">Loading...</div>;
+  if (loading) return <div className="text-center py-12 flex flex-col items-center"><div className="w-8 h-8 rounded-full border-4 border-[var(--accent)] border-t-transparent animate-spin mb-4"></div></div>;
 
   if (selected) return (
-    <div>
-      <button onClick={() => setSelected(null)} className="text-[var(--accent)] text-sm mb-4 hover:underline">← Back</button>
-      <h2 className="text-xl font-bold mb-1" style={{fontFamily:"var(--font-heading)"}}>{selected.title}</h2>
-      <p className="text-[var(--muted)] text-sm mb-6">{selected.subject} • Class {selected.grade} • Avg: {selected.avg}/{selected.max_marks}</p>
-      {subLoading ? <div className="text-[var(--muted)] py-8 text-center">Loading...</div> : submissions.length === 0 ? (
-        <div className="text-center py-12 bg-[var(--surface)] border border-[var(--border)] rounded-2xl text-[var(--muted)]">No submissions yet.</div>
+    <div className="animate-fade-in-up">
+      <button onClick={() => setSelected(null)} className="text-[var(--accent)] text-sm mb-6 flex items-center gap-1 hover:underline btn-tap">← Back to List</button>
+      <div className="bg-gradient-to-br from-[var(--surface)] to-[var(--surface2)] border border-[var(--border)] rounded-3xl p-6 md:p-8 mb-6 shadow-2xl relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-[var(--accent)]/10 rounded-full blur-3xl"></div>
+        <h2 className="text-2xl font-bold mb-2 relative z-10" style={{fontFamily:"var(--font-heading)"}}>{selected.title}</h2>
+        <p className="text-[var(--muted)] text-sm mb-2 font-medium relative z-10">{selected.subject} • Class {selected.grade}</p>
+        <div className="inline-flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] px-4 py-2 rounded-xl text-sm font-bold relative z-10">
+          Average Score: <span className="text-[var(--accent)]">{selected.avg}/{selected.max_marks}</span>
+        </div>
+      </div>
+      
+      {subLoading ? <div className="text-center py-8"><div className="w-6 h-6 mx-auto rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin"></div></div> : submissions.length === 0 ? (
+        <div className="text-center py-12 bg-[var(--surface)] border border-[var(--border)] rounded-3xl text-[var(--muted)] border-dashed border-2">No submissions yet for this assignment.</div>
       ) : (
-        <div className="space-y-2">{submissions.map(s => (
-          <div key={s.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex items-center justify-between">
-            <div><p className="font-medium text-sm">{s.studentName}</p><p className="text-[10px] text-[var(--muted)]">{new Date(s.submitted_at).toLocaleString('en-IN')}</p></div>
-            <p className={`font-bold text-lg ${s.ai_score >= selected.max_marks * 0.6 ? 'text-[var(--green)]' : 'text-[var(--red)]'}`}>{s.ai_score}/{selected.max_marks}</p>
+        <div className="grid gap-3 animate-fade-in-up stagger-2">{submissions.map((s, i) => (
+          <div key={s.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 flex items-center justify-between hover:-translate-y-1 transition-transform duration-300 shadow-lg">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center font-bold text-sm">{i+1}</div>
+              <div><p className="font-bold">{s.studentName}</p><p className="text-xs text-[var(--muted)] mt-0.5">{new Date(s.submitted_at).toLocaleString('en-IN')}</p></div>
+            </div>
+            <div className={`px-4 py-2 rounded-xl font-bold text-lg ${s.ai_score >= selected.max_marks * 0.6 ? 'bg-[var(--green)]/10 text-[var(--green)] border border-[var(--green)]/20' : 'bg-[var(--red)]/10 text-[var(--red)] border border-[var(--red)]/20'}`}>
+              {s.ai_score}/{selected.max_marks}
+            </div>
           </div>
         ))}</div>
       )}
@@ -82,25 +110,40 @@ function AssignmentsTab() {
   );
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold" style={{fontFamily:"var(--font-heading)"}}>Assignments</h2>
-        <a href="/teacher/assignments" className="flex items-center gap-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] px-4 py-2 rounded-xl text-sm font-semibold btn-tap"><Plus className="w-4 h-4" /> New Assignment</a>
+    <div className="animate-fade-in-up">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold" style={{fontFamily:"var(--font-heading)"}}>Assignment Dashboard</h2>
+          <p className="text-sm text-[var(--muted)] mt-1">Track submissions and scores</p>
+        </div>
+        <a href="/teacher/assignments" className="flex items-center gap-2 bg-gradient-to-b from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] px-6 py-3 rounded-2xl text-sm font-bold shadow-[0_4px_0_0_#b37318] active:translate-y-[4px] active:shadow-none transition-all btn-tap"><Plus className="w-4 h-4" /> Create Assignment</a>
       </div>
       {assignments.length === 0 ? (
-        <div className="text-center py-16 bg-[var(--surface)] border border-[var(--border)] rounded-2xl">
-          <ClipboardList className="w-10 h-10 mx-auto text-[var(--muted)]/30 mb-3" />
-          <p className="text-[var(--muted)]">No assignments yet</p>
+        <div className="text-center py-20 bg-[var(--surface)] border-2 border-dashed border-[var(--border)] rounded-3xl flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center mb-4"><ClipboardList className="w-8 h-8 text-[var(--muted)]" /></div>
+          <p className="text-lg font-bold mb-2">No assignments active</p>
+          <p className="text-[var(--muted)] text-sm mb-6 max-w-sm">Create your first intelligent assignment to have Skillo automatically grade student responses.</p>
+          <a href="/teacher/assignments" className="text-[var(--accent)] font-semibold text-sm hover:underline">Create now →</a>
         </div>
       ) : (
-        <div className="space-y-2">{assignments.map(a => (
-          <button key={a.id} onClick={() => viewSubs(a)} className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 text-left hover:border-[var(--accent)]/30 transition card-hover">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-sm">{a.title}</h3>
-              <span className="text-[10px] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-0.5 rounded-full font-medium capitalize">{a.subject}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{assignments.map(a => (
+          <button key={a.id} onClick={() => viewSubs(a)} className="relative group text-left bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_30px_rgba(0,0,0,0.5)] hover:border-[var(--accent)]/50 overflow-hidden text-clip z-0">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[var(--accent)]/10 to-transparent -z-10 rounded-bl-[100px] transition-transform group-hover:scale-110"></div>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-[10px] bg-[var(--accent)]/20 text-[var(--accent)] px-3 py-1 rounded-full font-bold uppercase tracking-wider">{a.subject}</span>
+              <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--bg)] px-2 py-1 rounded-lg border border-[var(--border)]">Class {a.grade}</span>
             </div>
-            <div className="flex gap-4 text-xs text-[var(--muted)]">
-              <span>Class {a.grade}</span><span>{a.subCount} submitted</span><span>Avg: {a.avg}/{a.max_marks}</span>
+            <h3 className="font-extrabold text-lg mb-4 line-clamp-2" style={{fontFamily:"var(--font-heading)"}}>{a.title}</h3>
+            
+            <div className="grid grid-cols-2 gap-2 mt-auto">
+              <div className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 flex flex-col items-center justify-center">
+                <span className="text-xl font-black">{a.subCount}</span>
+                <span className="text-[10px] text-[var(--muted)] uppercase font-semibold">Submitted</span>
+              </div>
+              <div className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-[var(--accent)]">{a.avg}<span className="text-[14px] text-[var(--muted)]">/{a.max_marks}</span></span>
+                <span className="text-[10px] text-[var(--muted)] uppercase font-semibold">Average</span>
+              </div>
             </div>
           </button>
         ))}</div>
@@ -152,46 +195,59 @@ function AnalyticsTab() {
     load();
   }, []);
 
-  if (loading) return <div className="text-center py-12 text-[var(--muted)]">Loading...</div>;
+  if (loading) return <div className="text-center py-12 flex flex-col items-center"><div className="w-8 h-8 rounded-full border-4 border-[var(--accent)] border-t-transparent animate-spin mb-4"></div></div>;
   if (!data) return <div className="text-center py-12 text-[var(--muted)]">No data yet</div>;
 
   const maxW = Math.max(...data.weekly.map(d=>d.count),1);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold flex items-center gap-2" style={{fontFamily:"var(--font-heading)"}}><BarChart3 className="w-5 h-5 text-[var(--accent)]" /> Analytics</h2>
+    <div className="space-y-6 animate-fade-in-up">
+      <h2 className="text-2xl font-bold flex items-center gap-2 mb-6" style={{fontFamily:"var(--font-heading)"}}><BarChart3 className="w-6 h-6 text-[var(--accent)]" /> Institutional Analytics</h2>
 
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-[var(--muted)] mb-4">Subject Averages</h3>
-        {data.subjectAvg.length === 0 ? <p className="text-sm text-[var(--muted)]/50">No data</p> : (
-          <div className="space-y-3">{data.subjectAvg.map(s => (
-            <div key={s.subject}>
-              <div className="flex justify-between text-xs mb-1"><span className="capitalize">{s.subject}</span><span className={s.avg>=60?'text-[var(--green)]':'text-[var(--red)]'}>{s.avg}%</span></div>
-              <div className="h-2 bg-[var(--bg)] rounded-full overflow-hidden"><div className={`h-full rounded-full progress-bar ${s.avg>=60?'bg-[var(--green)]':'bg-[var(--red)]'}`} style={{width:`${s.avg}%`}} /></div>
-            </div>
-          ))}</div>
-        )}
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-gradient-to-br from-[var(--surface)] to-[var(--surface2)] border border-[var(--border)] rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden group hover:border-[var(--border)]/80 transition-all">
+          <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-[var(--blue)] to-transparent"></div>
+          <h3 className="text-sm font-bold text-[var(--muted)] mb-6 uppercase tracking-wider">Subject Averages</h3>
+          {data.subjectAvg.length === 0 ? <p className="text-sm text-[var(--muted)]/50">No data</p> : (
+            <div className="space-y-5">{data.subjectAvg.map(s => (
+              <div key={s.subject}>
+                <div className="flex justify-between text-sm font-semibold mb-2"><span className="capitalize">{s.subject}</span><span className={s.avg>=60?'text-[var(--green)]':'text-[var(--red)]'}>{s.avg}%</span></div>
+                <div className="h-3 bg-[var(--bg)] rounded-full overflow-hidden shadow-inner"><div className={`h-full rounded-full relative progress-bar ${s.avg>=60?'bg-[var(--green)]':'bg-[var(--red)]'}`} style={{width:`${s.avg}%`}}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                </div></div>
+              </div>
+            ))}</div>
+          )}
+        </div>
 
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-[var(--muted)] mb-4">Weekly Submissions</h3>
-        <div className="flex items-end gap-2 h-28">
-          {data.weekly.map((d,i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-[10px] text-[var(--muted)]">{d.count}</span>
-              <div className="w-full rounded-t bg-gradient-to-t from-[var(--accent)] to-[var(--accent2)] transition-all" style={{height:`${Math.max((d.count/maxW)*100,4)}%`,minHeight:'4px'}} />
-              <span className="text-[10px] text-[var(--muted)]">{d.day}</span>
-            </div>
-          ))}
+        <div className="bg-gradient-to-br from-[var(--surface)] to-[var(--surface2)] border border-[var(--border)] rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden group hover:border-[var(--border)]/80 transition-all">
+          <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-[var(--accent)] to-[var(--accent2)]"></div>
+          <h3 className="text-sm font-bold text-[var(--muted)] mb-8 uppercase tracking-wider">Submissions Last 7 Days</h3>
+          <div className="flex items-end justify-between gap-2 h-32 pt-4">
+            {data.weekly.map((d,i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 group/bar">
+                <span className="text-[10px] font-bold text-[var(--text)] opacity-0 group-hover/bar:opacity-100 transition-opacity bg-[var(--surface2)] px-2 py-1 rounded-md mb-1 absolute -mt-8">{d.count}</span>
+                <div className="w-full rounded-t-xl bg-gradient-to-t from-[var(--accent2)] to-[var(--accent)] transition-all duration-500 ease-in-out group-hover/bar:brightness-125 shadow-[0_0_15px_rgba(245,166,35,0.2)]" style={{height:`${Math.max((d.count/maxW)*100,4)}%`,minHeight:'4px'}} />
+                <span className="text-[10px] text-[var(--muted)] font-medium mt-1">{d.day}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-[var(--muted)] mb-3 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-500" /> Students Needing Attention</h3>
-        {data.needAtt.length === 0 ? <p className="text-sm text-[var(--green)]">All good! 🎉</p> : (
-          <div className="space-y-2">{data.needAtt.map(s => (
-            <div key={s.id} className="flex items-center justify-between p-3 bg-[var(--bg)] rounded-xl border border-[var(--border)]">
-              <span className="text-sm">{s.name}</span><span className="text-[var(--red)] font-semibold text-sm">{s.avg}%</span>
+      <div className="bg-gradient-to-br from-[var(--surface)] to-[var(--surface2)] border border-[var(--border)] rounded-3xl p-6 md:p-8 shadow-2xl mt-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-500 to-red-500"></div>
+        <h3 className="text-sm font-bold text-[var(--muted)] mb-6 uppercase tracking-wider flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-500" /> Intervention Required</h3>
+        {data.needAtt.length === 0 ? <p className="text-sm font-bold text-[var(--green)] bg-[var(--green)]/10 p-4 rounded-xl border border-[var(--green)]/20 text-center">Class is performing exceptionally well! 🎉</p> : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{data.needAtt.map(s => (
+            <div key={s.id} className="flex items-center justify-between p-4 bg-[var(--bg)] rounded-2xl border border-red-500/20 shadow-[0_4px_15px_rgba(239,68,68,0.05)] hover:-translate-y-1 transition-transform">
+              <div>
+                <span className="font-bold text-sm block mb-1">{s.name}</span>
+                <span className="text-[10px] text-[var(--muted)] uppercase">Average Score</span>
+              </div>
+              <div className="w-12 h-12 rounded-full border-4 border-[var(--red)]/20 flex items-center justify-center font-bold text-[var(--red)] text-sm">
+                {s.avg}%
+              </div>
             </div>
           ))}</div>
         )}
@@ -277,50 +333,48 @@ export default function TeacherDashboard() {
       <div className="max-w-6xl mx-auto">
         <TeacherHeader active={activeTab} />
 
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div><h1 className="text-2xl md:text-3xl font-extrabold" style={{fontFamily:"var(--font-heading)"}}>Teacher Dashboard</h1><p className="text-sm text-[var(--muted)] mt-1">Real-time student tracking</p></div>
-          <a href="/teacher/assignments" className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] px-5 py-2.5 rounded-xl text-sm font-bold btn-tap"><Plus className="w-4 h-4" /> Create Assignment</a>
+        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-in-up">
+          <div>
+            <div className="inline-block px-3 py-1 mb-3 rounded-full bg-[var(--surface)] border border-[var(--border)] text-xs font-bold tracking-widest uppercase text-[var(--accent)]">Command Center</div>
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight" style={{fontFamily:"var(--font-heading)"}}>Teacher Dashboard</h1>
+            <p className="text-base text-[var(--muted)] mt-2 max-w-lg leading-relaxed">Oversee real-time AI-powered student progression across your classroom.</p>
+          </div>
+          <a href="/teacher/assignments" className="inline-flex items-center justify-center gap-2 bg-gradient-to-b from-[var(--accent)] to-[var(--accent2)] text-[var(--bg)] px-8 py-4 rounded-2xl text-base font-black shadow-[0_6px_0_0_#b37318] hover:shadow-[0_4px_0_0_#b37318] hover:translate-y-[2px] active:shadow-none active:translate-y-[6px] transition-all"><Plus className="w-5 h-5 stroke-[3]" /> Assignment</a>
         </header>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        {/* 3D Stat Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12 animate-fade-in-up stagger-1">
           {[
-            { icon: Users, label: "Total", val: stats.total, color: "text-[var(--blue)]" },
-            { icon: Activity, label: "Active Today", val: stats.active, color: "text-[var(--green)]" },
-            { icon: AlertCircle, label: "Need Attention", val: stats.attention, color: "text-[var(--red)]" },
-            { icon: Flame, label: "Avg Streak", val: `${stats.avgStreak}d`, color: "text-[var(--accent)]" }
+            { icon: Users, label: "Total Students", val: stats.total, color: "text-[var(--blue)]", bg: "from-[var(--blue)]/20 to-transparent", border: "border-[var(--blue)]/30" },
+            { icon: Activity, label: "Active Today", val: stats.active, color: "text-[var(--green)]", bg: "from-[var(--green)]/20 to-transparent", border: "border-[var(--green)]/30" },
+            { icon: AlertCircle, label: "Need Attention", val: stats.attention, color: "text-[var(--red)]", bg: "from-[var(--red)]/20 to-transparent", border: "border-[var(--red)]/30" },
+            { icon: Flame, label: "Avg Class Streak", val: `${stats.avgStreak}d`, color: "text-[var(--accent)]", bg: "from-[var(--accent)]/20 to-transparent", border: "border-[var(--accent)]/30" }
           ].map((s,i) => (
-            <div key={i} className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 text-center">
-              <s.icon className={`w-5 h-5 mx-auto mb-2 ${s.color}`} />
-              <p className="text-2xl font-extrabold" style={{fontFamily:"var(--font-heading)"}}>{s.val}</p>
-              <p className="text-[10px] text-[var(--muted)] mt-1 uppercase tracking-wider">{s.label}</p>
+            <div key={i} className={`bg-gradient-to-br ${s.bg} bg-[var(--surface)] border-2 ${s.border} rounded-3xl p-5 md:p-6 text-center transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 relative overflow-hidden group`}>
+              <div className={`absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-20 blur-xl ${s.color.replace('text-','bg-')} group-hover:scale-150 transition-transform duration-500`}></div>
+              <div className={`w-12 h-12 mx-auto rounded-2xl bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center mb-4 shadow-inner ${s.color}`}>
+                <s.icon className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <p className="text-4xl font-black mb-1 drop-shadow-sm" style={{fontFamily:"var(--font-heading)"}}>{s.val}</p>
+              <p className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-widest">{s.label}</p>
             </div>
-          ))}
-        </div>
-
-        {/* Tab pills */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {["students","assignments","analytics"].map(t=>(
-            <button key={t} onClick={()=>setActiveTab(t)} className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap btn-tap ${activeTab===t?'bg-[var(--accent)] text-[var(--bg)]':'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'}`}>
-              {t.charAt(0).toUpperCase()+t.slice(1)}
-            </button>
           ))}
         </div>
 
         {activeTab === "assignments" && <AssignmentsTab />}
         {activeTab === "analytics" && <AnalyticsTab />}
         {activeTab === "students" && (
-          <>
-            {/* Search + filter */}
-            <div className="flex flex-col md:flex-row gap-3 mb-6">
+          <div className="animate-fade-in-up stagger-2">
+            {/* Search + filter with glassmorphism */}
+            <div className="flex flex-col md:flex-row gap-4 mb-8 bg-[var(--surface)]/50 backdrop-blur-md border border-[var(--border)] p-3 rounded-3xl">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
-                <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search students..." className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--muted)]/40" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--muted)]" />
+                <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search students by name..." className="w-full bg-[var(--bg)] border-2 border-[var(--border)] focus:border-[var(--accent)] rounded-2xl pl-12 pr-4 py-3 text-sm text-[var(--text)] placeholder:text-[var(--muted)]/50 outline-none transition-colors shadow-inner" />
               </div>
-              <div className="flex gap-2">
+              <div className="flex bg-[var(--bg)] rounded-2xl p-1 border border-[var(--border)]">
                 {["all","active","attention"].map(f=>(
-                  <button key={f} onClick={()=>setFilter(f)} className={`px-3 py-2 rounded-xl text-xs font-semibold transition btn-tap ${filter===f?'bg-[var(--accent)] text-[var(--bg)]':'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'}`}>
-                    {f==="all"?"All":f==="active"?"Active":"Needs Help"}
+                  <button key={f} onClick={()=>setFilter(f)} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all btn-tap flex-1 md:flex-none ${filter===f?'bg-[var(--surface)] text-[var(--text)] shadow-md border border-[var(--border)]':'text-[var(--muted)] hover:text-[var(--text)] border border-transparent'}`}>
+                    {f==="all"?"All":f==="active"?"Active":"Alerts"}
                   </button>
                 ))}
               </div>
@@ -368,7 +422,7 @@ export default function TeacherDashboard() {
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
