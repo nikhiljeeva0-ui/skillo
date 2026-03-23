@@ -17,6 +17,7 @@ export default function Home() {
             <a href="/teacher" className="hover:text-[var(--accent)] transition-colors font-semibold">Teacher Dashboard</a>
           </div>
           <div className="flex items-center gap-3">
+            <a href="/login" className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors hidden md:block">Log in</a>
             <a href="/teacher" className="text-[var(--accent)] font-semibold px-4 py-2 border border-[var(--accent)]/30 rounded-xl hover:bg-[var(--accent)]/10 text-sm hidden md:block transition-all btn-tap">Teacher Hub</a>
             <a href="/onboard" className="bg-[var(--accent)] text-[var(--bg)] px-4 py-2 rounded-xl text-sm font-bold shadow-[0_4px_12px_rgba(245,166,35,0.3)] hover:shadow-none hover:translate-y-[2px] transition-all btn-tap">Student Start</a>
           </div>
