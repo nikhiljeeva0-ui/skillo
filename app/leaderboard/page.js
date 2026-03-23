@@ -19,26 +19,52 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     async function load() {
-      if (!supabase) { setLoading(false); return; }
-      try {
-        const { data: pts } = await supabase.from("student_points").select("*").order("total_points", { ascending: false }).limit(20);
-        if (pts) {
-          const ids = pts.map(p => p.user_id);
-          const { data: models } = await supabase.from("learner_models").select("user_id, model_json").in("user_id", ids);
-          const nm = {};
-          if (models) models.forEach(m => {
-            nm[m.user_id] = { name: m.model_json?.profile?.name || m.user_id, grade: m.model_json?.profile?.grade || "?" };
-          });
-          setStudents(pts.map((p,i) => ({
-            rank: i+1, userId: p.user_id,
-            name: nm[p.user_id]?.name || p.user_id,
-            grade: nm[p.user_id]?.grade || "?",
-            points: p.total_points || 0,
-            streak: p.streak_days || 0,
-            badges: p.badges || []
-          })));
-        }
-      } catch(e) { console.error(e); }
+      let dbStudents = [];
+      if (supabase) {
+        try {
+          const { data: pts } = await supabase.from("student_points").select("*").order("total_points", { ascending: false }).limit(20);
+          if (pts && pts.length > 0) {
+            const ids = pts.map(p => p.user_id);
+            const { data: models } = await supabase.from("learner_models").select("user_id, model_json").in("user_id", ids);
+            const nm = {};
+            if (models) models.forEach(m => {
+              nm[m.user_id] = { name: m.model_json?.profile?.name || m.user_id, grade: m.model_json?.profile?.grade || "?" };
+            });
+            dbStudents = pts.map((p,i) => ({
+              rank: i+1, userId: p.user_id,
+              name: nm[p.user_id]?.name || p.user_id,
+              grade: nm[p.user_id]?.grade || "?",
+              points: p.total_points || 0,
+              streak: p.streak_days || 0,
+              badges: p.badges || []
+            }));
+          }
+        } catch(e) { console.error(e); }
+      }
+
+      // If no students from DB, create fallback leaderboard with current user + demo students
+      if (dbStudents.length === 0) {
+        const myName = typeof window !== 'undefined' ? localStorage.getItem("skillo_name") || "You" : "You";
+        const myGrade = typeof window !== 'undefined' ? localStorage.getItem("skillo_grade") || "9" : "9";
+        const myPts = parseInt(typeof window !== 'undefined' ? localStorage.getItem("skillo_challenge_points") || "0" : "0");
+        const myStrk = parseInt(typeof window !== 'undefined' ? localStorage.getItem("skillo_challenge_streak") || "0" : "0");
+
+        dbStudents = [
+          { rank: 1, userId: "demo_1", name: "Aarav Singh", grade: "10", points: 340, streak: 12, badges: [] },
+          { rank: 2, userId: "demo_2", name: "Priya Sharma", grade: "9", points: 285, streak: 8, badges: [] },
+          { rank: 3, userId: "demo_3", name: "Rahul Kumar", grade: "10", points: 220, streak: 5, badges: [] },
+          { rank: 4, userId: "demo_4", name: "Ananya Patel", grade: "9", points: 195, streak: 6, badges: [] },
+          { rank: 5, userId: currentUserId, name: myName, grade: myGrade, points: myPts, streak: myStrk, badges: [] },
+          { rank: 6, userId: "demo_5", name: "Vikram Joshi", grade: "11", points: 150, streak: 3, badges: [] },
+          { rank: 7, userId: "demo_6", name: "Sneha Reddy", grade: "10", points: 130, streak: 4, badges: [] },
+          { rank: 8, userId: "demo_7", name: "Arjun Nair", grade: "9", points: 110, streak: 2, badges: [] },
+        ];
+        // Re-sort by points and fix ranks
+        dbStudents.sort((a,b) => b.points - a.points);
+        dbStudents.forEach((s,i) => s.rank = i+1);
+      }
+
+      setStudents(dbStudents);
       setLoading(false);
     }
     load();

@@ -61,9 +61,10 @@ export async function POST(req) {
 
   } catch (error) {
     console.error('CHAT API ERROR:', error.message);
+    const isRateLimit = error.message?.includes('429') || error.message?.includes('quota') || error.message?.includes('RESOURCE_EXHAUSTED');
     return Response.json(
-      { error: error.message }, 
-      { status: 500 }
+      { error: isRateLimit ? 'Too many requests. Please wait a moment and try again.' : 'Something went wrong. Please try again.' }, 
+      { status: isRateLimit ? 429 : 500 }
     );
   }
 }

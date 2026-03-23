@@ -11,7 +11,7 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
-  const [pageError, setPageError] = useState(false);
+
   const [studentInfo, setStudentInfo] = useState({ name: "", grade: "", streak: 0 });
   const messagesEndRef = useRef(null);
   const messagesRef = useRef(messages);
@@ -133,7 +133,12 @@ export default function Chat() {
       localStorage.setItem(`skillo_chat_history_${userId}`, JSON.stringify(botMessages));
     } catch (error) {
       console.error(error);
-      setPageError(error.message || "Something went wrong");
+      const isRateLimit = error.message?.includes("429") || error.message?.includes("quota") || error.message?.includes("Too Many");
+      const friendlyMsg = isRateLimit
+        ? "Skillo is resting for a moment 😴 Too many questions at once! Try again in a minute."
+        : "Oops! Something went wrong. Let me try again.";
+      const errMessages = [...newMessages, { role: "assistant", content: `⚠️ ${friendlyMsg}`, time: new Date(), isError: true }];
+      setMessages(errMessages);
     } finally { setIsLoading(false); }
   };
 
@@ -145,13 +150,7 @@ export default function Chat() {
   const suggestedTopics = ["Triangles", "Polynomials", "Probability", "Linear Equations"];
 
   if (pageLoading) return <Loading />;
-  if (pageError) return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col items-center justify-center p-4 text-center">
-      <p className="text-xl mb-2" style={{fontFamily:"var(--font-heading)"}}>Oops!</p>
-      <p className="text-sm text-[var(--red)] mb-6 bg-[var(--surface)] p-3 rounded-2xl border border-[var(--red)]/20 max-w-sm">{typeof pageError === "string" ? pageError : "Something went wrong"}</p>
-      <button onClick={() => window.location.reload()} className="bg-[var(--accent)] text-[var(--bg)] px-8 py-3 rounded-xl font-bold btn-tap">Retry</button>
-    </div>
-  );
+
 
   return (
     <div className="flex flex-col h-[100dvh] bg-[var(--bg)] max-w-2xl mx-auto border-x border-[var(--border)] relative overflow-hidden">
@@ -184,7 +183,9 @@ export default function Chat() {
               <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 m.role === "user"
                   ? "bg-[var(--accent)]/12 border border-[var(--accent)]/20 text-[var(--text)] rounded-tr-sm"
-                  : "bg-[var(--surface2)] border border-[var(--border)] text-[var(--muted)] rounded-tl-sm whitespace-pre-wrap"
+                  : m.isError
+                    ? "bg-[var(--red)]/10 border border-[var(--red)]/20 text-[var(--red)] rounded-tl-sm"
+                    : "bg-[var(--surface2)] border border-[var(--border)] text-[var(--muted)] rounded-tl-sm whitespace-pre-wrap"
               }`}>{m.content}</div>
               <span className={`text-[10px] text-[var(--muted)]/50 ${m.role === "user" ? "text-right" : "text-left"} px-1`}>{formatTime(m.time)}</span>
             </div>
