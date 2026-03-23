@@ -1,6 +1,6 @@
 'use server';
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getLearnerModel } from "@/lib/learnerModel";
 import { buildSystemPrompt } from "@/lib/buildSystemPrompt";
 
@@ -18,16 +18,14 @@ export async function POST(req) {
       );
     }
 
-    const ai = new GoogleGenAI({ 
-      apiKey: process.env.GEMINI_API_KEY 
-    });
-
     const learnerModel = await getLearnerModel(userId);
     const systemPrompt = buildSystemPrompt(learnerModel);
 
-    console.log('userId:', userId);
-    console.log('GEMINI_KEY exists:', !!process.env.GEMINI_API_KEY);
-    console.log('messages:', messages.length);
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash",
+      systemInstruction: systemPrompt 
+    });
 
     const userMessages = messages.filter((m, i) => {
       if (i === 0 && m.role === 'assistant') return false;
@@ -41,41 +39,28 @@ export async function POST(req) {
       );
     }
 
-    const lastMessage = 
-      userMessages[userMessages.length - 1].content;
-
+    const lastMessage = userMessages[userMessages.length - 1].content;
     const history = userMessages
       .slice(0, -1)
       .map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }]
-      }))
-      .filter((_, i, arr) => {
-        if (i === 0 && arr[0].role === 'model') 
-          return false;
-        return true;
-      });
+      }));
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.0-flash',
-      system: systemPrompt,
-      history: history
+    const chat = model.startChat({
+      history: history,
     });
 
-    const response = await chat.sendMessage({ 
-      message: lastMessage 
-    });
+    const result = await chat.sendMessage(lastMessage);
+    const responseText = result.response.text();
 
-    console.log('Response received successfully');
-
-    return new Response(response.text, { 
+    return new Response(responseText, { 
       status: 200,
       headers: { 'Content-Type': 'text/plain' }
     });
 
   } catch (error) {
     console.error('CHAT API ERROR:', error.message);
-    console.error('Full error:', error);
     return Response.json(
       { error: error.message }, 
       { status: 500 }

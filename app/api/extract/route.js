@@ -1,15 +1,21 @@
 import { getLearnerModel, saveLearnerModel, mergeInsights } from "@/lib/learnerModel";
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY 
-});
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req) {
   try {
     const { messages, userId } = await req.json();
     
-    const model = await getLearnerModel(
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is missing');
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash",
+      generationConfig: { responseMimeType: "application/json" }
+    });
+
+    const learnerModel = await getLearnerModel(
       userId || 'student_001'
     );
 
@@ -20,7 +26,7 @@ export async function POST(req) {
     const extractionPrompt = `
 You are an education analyst.
 Analyze this tutoring conversation and extract insights.
-Respond ONLY in valid JSON. No markdown, no extra text.
+Respond ONLY in valid JSON.
 
 {
   "topics_discussed": [
@@ -43,19 +49,11 @@ Respond ONLY in valid JSON. No markdown, no extra text.
 Conversation:
 ${conversation}`;
 
-    const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: extractionPrompt
-    });
-
-    let responseText = result.text;
-    responseText = responseText
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
-      .trim();
+    const result = await model.generateContent(extractionPrompt);
+    const responseText = result.response.text();
 
     const insights = JSON.parse(responseText);
-    const updatedModel = mergeInsights(model, insights);
+    const updatedModel = mergeInsights(learnerModel, insights);
     await saveLearnerModel(
       userId || 'student_001', 
       updatedModel

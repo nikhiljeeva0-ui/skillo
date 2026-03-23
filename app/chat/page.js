@@ -73,7 +73,8 @@ export default function Chat() {
       return;
     }
 
-    setStudentInfo({ name, grade });
+    const savedUserId = localStorage.getItem("skillo_user_id") || "student_001";
+    setStudentInfo({ name, grade, userId: savedUserId });
 
     const isHi = lang === "हिंदी" || lang === "hi";
     
@@ -112,9 +113,10 @@ export default function Chat() {
 
     const userMsg = input.trim();
     setInput("");
+    const userId = studentInfo.userId || "student_001";
     const newMessages = [...messages, { role: "user", content: userMsg }];
     setMessages(newMessages);
-    localStorage.setItem("skillo_chat_history_student_001", JSON.stringify(newMessages));
+    localStorage.setItem(`skillo_chat_history_${userId}`, JSON.stringify(newMessages));
     setIsLoading(true);
 
     try {
@@ -123,7 +125,7 @@ export default function Chat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-          userId: "student_001",
+          userId: studentInfo.userId || "student_001",
         }),
       });
 
@@ -135,10 +137,10 @@ export default function Chat() {
       const text = await response.text();
       const botMessages = [...newMessages, { role: "assistant", content: text }];
       setMessages(botMessages);
-      localStorage.setItem("skillo_chat_history_student_001", JSON.stringify(botMessages));
+      localStorage.setItem(`skillo_chat_history_${studentInfo.userId || "student_001"}`, JSON.stringify(botMessages));
     } catch (error) {
       console.error(error);
-      setPageError(true);
+      setPageError(error.message || "Thodi si problem aayi. Dobara try karo! 🔄");
     } finally {
       setIsLoading(false);
     }
@@ -154,8 +156,11 @@ export default function Chat() {
   if (pageLoading) return <Loading />;
   if (pageError) return (
     <div className="min-h-screen bg-[#0f0e0d] text-[#e8e2d9] flex flex-col items-center justify-center p-4 text-center">
-      <p className="text-xl mb-4">Thodi si problem aayi. Dobara try karo! 🔄</p>
-      <button onClick={() => window.location.reload()} className="bg-[#c9a84c] text-[#0f0e0d] px-6 py-2 rounded-full font-bold">Retry</button>
+      <p className="text-xl mb-2">Oops! Thodi si problem aayi.</p>
+      <p className="text-sm text-red-400 mb-6 bg-[#181714] p-3 rounded-lg border border-red-900/30 max-w-sm">
+        {typeof pageError === "string" ? pageError : "API error. Dobara try karo! 🔄"}
+      </p>
+      <button onClick={() => window.location.reload()} className="bg-[#c9a84c] text-[#0f0e0d] px-8 py-3 rounded-full font-bold shadow-lg hover:bg-[#b8973b] transition-colors">Retry</button>
     </div>
   );
 
@@ -165,7 +170,7 @@ export default function Chat() {
       <header className="bg-[#181714] border-b border-[#2a2824] p-3 md:p-4 flex items-center justify-between z-10 sticky top-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f0e0d] font-bold text-xl shadow-lg">
-            V
+            S
           </div>
           <div>
             <h1 className="text-lg font-bold text-[#e8e2d9]">Skillo</h1>
@@ -189,7 +194,7 @@ export default function Chat() {
       </header>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0f0e0d] pb-[80px] scroll-smooth">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0f0e0d] pb-[140px] scroll-smooth">
         {messages.map((m, i) => (
           <div
             key={i}
@@ -220,26 +225,51 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="absolute bottom-0 w-full bg-[#181714] border-t border-[#2a2824] p-3 md:p-4">
-        <form onSubmit={handleSubmit} className="flex gap-2 max-w-2xl mx-auto relative items-center">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={localStorage.getItem("skillo_lang") === "हिंदी" ? "कुछ भी पूछो..." : "Type a message..."}
-            className="flex-1 resize-none bg-[#0f0e0d] border border-[#33312c] rounded-2xl pl-4 pr-12 py-3 text-[#e8e2d9] focus:outline-none focus:border-[#c9a84c] max-h-32 min-h-[50px] flex items-center"
-            rows="1"
-            style={{ overflowY: input.split("\n").length > 2 ? "auto" : "hidden" }}
-          />
+      {/* Quick Actions + Input Area */}
+      <div className="absolute bottom-0 w-full bg-[#181714] border-t border-[#2a2824]">
+        {/* Quick action buttons */}
+        <div className="flex items-center justify-center gap-2 px-3 pt-2 pb-1">
           <button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            className="absolute right-2 bottom-3 mb-0.5 bg-[#c9a84c] text-[#0f0e0d] p-2 rounded-full hover:bg-[#b8973b] transition-colors disabled:opacity-50 disabled:hover:bg-[#c9a84c] transform active:scale-90 flex items-center"
+            onClick={() => router.push("/challenge")}
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#0f0e0d] border border-[#2a2824] rounded-full text-xs text-[#c9a84c] hover:bg-[#2a2824] transition-colors active:scale-95"
           >
-            {localStorage.getItem("skillo_lang") === "हिंदी" ? <span className="text-xs px-1 font-bold">भेजो</span> : <Send className="w-5 h-5 -ml-0.5 mt-0.5" />}
+            📝 Daily Challenge
           </button>
-        </form>
+          <button
+            onClick={() => router.push("/leaderboard")}
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#0f0e0d] border border-[#2a2824] rounded-full text-xs text-[#c9a84c] hover:bg-[#2a2824] transition-colors active:scale-95"
+          >
+            🏆 Leaderboard
+          </button>
+          <button
+            onClick={() => router.push("/report")}
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#0f0e0d] border border-[#2a2824] rounded-full text-xs text-[#c9a84c] hover:bg-[#2a2824] transition-colors active:scale-95"
+          >
+            📊 My Progress
+          </button>
+        </div>
+
+        {/* Input */}
+        <div className="p-3 md:p-4 pt-1">
+          <form onSubmit={handleSubmit} className="flex gap-2 max-w-2xl mx-auto relative items-center">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={localStorage.getItem("skillo_lang") === "हिंदी" ? "कुछ भी पूछो..." : "Type a message..."}
+              className="flex-1 resize-none bg-[#0f0e0d] border border-[#33312c] rounded-2xl pl-4 pr-12 py-3 text-[#e8e2d9] focus:outline-none focus:border-[#c9a84c] max-h-32 min-h-[50px] flex items-center"
+              rows="1"
+              style={{ overflowY: input.split("\n").length > 2 ? "auto" : "hidden" }}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              className="absolute right-2 bottom-3 mb-0.5 bg-[#c9a84c] text-[#0f0e0d] p-2 rounded-full hover:bg-[#b8973b] transition-colors disabled:opacity-50 disabled:hover:bg-[#c9a84c] transform active:scale-90 flex items-center"
+            >
+              {localStorage.getItem("skillo_lang") === "हिंदी" ? <span className="text-xs px-1 font-bold">भेजो</span> : <Send className="w-5 h-5 -ml-0.5 mt-0.5" />}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

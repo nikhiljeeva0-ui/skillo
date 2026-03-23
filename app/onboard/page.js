@@ -51,7 +51,7 @@ export default function OnboardChat() {
     }
   }, []);
 
-  const appendBotMessage = (textTemplate, delay = BOT_DELAY) => {
+  const appendBotMessage = (textTemplate) => {
     setIsTyping(true);
     setTimeout(() => {
       const text = typeof textTemplate === "function" ? textTemplate(answers) : textTemplate;
@@ -61,24 +61,24 @@ export default function OnboardChat() {
       if (steps[stepIndex]?.id === "done" || stepIndex >= steps.length - 1) {
         finishOnboarding(answers);
       }
-    }, delay);
+    }, BOT_DELAY);
   };
 
   const advanceToStep = (nextIdx, currentAnswers) => {
+    if (nextIdx >= steps.length) return;
+    
     setStepIndex(nextIdx);
-    if (nextIdx < steps.length) {
-      const nextStep = steps[nextIdx];
-      const text = typeof nextStep.text === "function" ? nextStep.text(currentAnswers) : nextStep.text;
-      
-      setIsTyping(true);
-      setTimeout(() => {
-        setMessages(prev => [...prev, { role: "assistant", content: text }]);
-        setIsTyping(false);
-        if (nextStep.id === "done") {
-          finishOnboarding(currentAnswers);
-        }
-      }, BOT_DELAY);
-    }
+    const nextStep = steps[nextIdx];
+    const text = typeof nextStep.text === "function" ? nextStep.text(currentAnswers) : nextStep.text;
+    
+    setIsTyping(true);
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: "assistant", content: text }]);
+      setIsTyping(false);
+      if (nextStep.id === "done") {
+        finishOnboarding(currentAnswers);
+      }
+    }, BOT_DELAY);
   };
 
   const handleAnswer = async (val) => {
@@ -174,7 +174,7 @@ export default function OnboardChat() {
   return (
     <div className="flex flex-col h-[100dvh] bg-[#0f0e0d] max-w-2xl mx-auto border-x border-[#2a2824] relative shadow-2xl overflow-hidden">
       <header className="bg-[#181714] border-b border-[#2a2824] p-3 md:p-4 flex items-center gap-3 z-10 sticky top-0">
-        <div className="w-10 h-10 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f0e0d] font-bold text-xl">V</div>
+        <div className="w-10 h-10 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f0e0d] font-bold text-xl">S</div>
         <div>
           <h1 className="text-lg font-bold text-[#e8e2d9]">Skillo Onboarding</h1>
           <p className="text-xs text-green-500 flex items-center gap-1">

@@ -61,11 +61,10 @@ export default function RegisterInstitution() {
     if (!val.trim()) return;
     setMessages(prev => [...prev, { role: "user", content: val }]);
     
+    const nextIdx = stepIndex + 1;
     const newAnswers = { ...answers, [currentStep.id]: val };
     setAnswers(newAnswers);
     setInputText("");
-
-    const nextIdx = stepIndex + 1;
     setStepIndex(nextIdx);
     
     if (nextIdx < steps.length) {
@@ -105,7 +104,7 @@ export default function RegisterInstitution() {
   return (
     <div className="flex flex-col h-[100dvh] bg-[#0f0e0d] max-w-2xl mx-auto border-x border-[#2a2824] relative shadow-2xl overflow-hidden">
       <header className="bg-[#181714] border-b border-[#2a2824] p-3 md:p-4 flex items-center gap-3 z-10 sticky top-0">
-        <div className="w-10 h-10 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f0e0d] font-bold text-xl">V</div>
+        <div className="w-10 h-10 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f0e0d] font-bold text-xl">S</div>
         <div>
           <h1 className="text-lg font-bold text-[#e8e2d9]">Institution Registration</h1>
           <p className="text-xs text-green-500 flex items-center gap-1">
