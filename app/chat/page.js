@@ -223,6 +223,7 @@ export default function Chat() {
         {/* Quick actions */}
         <div className="flex items-center justify-center gap-2 px-3 pt-2.5 pb-1">
           {[
+            { label: "📚 Assignments", href: "/student/assignments" },
             { label: "📝 Challenge", href: "/challenge" },
             { label: "🏆 Leaderboard", href: "/leaderboard" },
             { label: "📊 Progress", href: "/report" }

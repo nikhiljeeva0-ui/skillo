@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Check, X as XIcon, Send } from "lucide-react";
+import { ArrowLeft, Check, X as XIcon, Send, Camera, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/lib/learnerModel";
 import Loading from "@/components/Loading";
 
@@ -256,21 +256,30 @@ export default function AssignmentSubmit() {
                   ))}
                 </div>
               ) : q.type === "Long Answer" ? (
-                <textarea
-                  value={answers[idx] || ""}
-                  onChange={(e) => updateAnswer(idx, e.target.value)}
-                  placeholder="Write your answer here..."
-                  rows={4}
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] focus:outline-none focus:border-[var(--accent)] resize-none placeholder:text-[var(--muted)]"
-                />
+                <div className="space-y-4">
+                  <div className="flex gap-2 mb-2">
+                    <button className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface2)] border border-[var(--border)] py-2.5 rounded-xl text-xs font-semibold hover:border-[var(--accent)] transition-all btn-tap"><Camera className="w-4 h-4" /> Camera Scan</button>
+                    <button className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface2)] border border-[var(--border)] py-2.5 rounded-xl text-xs font-semibold hover:border-[var(--accent)] transition-all btn-tap"><ImageIcon className="w-4 h-4" /> Upload Image</button>
+                  </div>
+                  <textarea
+                    value={answers[idx] || ""}
+                    onChange={(e) => updateAnswer(idx, e.target.value)}
+                    placeholder="Write your answer here or scan above..."
+                    rows={4}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] focus:outline-none focus:border-[var(--accent)] resize-none placeholder:text-[var(--muted)]"
+                  />
+                </div>
               ) : (
-                <input
-                  type="text"
-                  value={answers[idx] || ""}
-                  onChange={(e) => updateAnswer(idx, e.target.value)}
-                  placeholder="Type your answer..."
-                  className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={answers[idx] || ""}
+                    onChange={(e) => updateAnswer(idx, e.target.value)}
+                    placeholder="Type your answer..."
+                    className="flex-1 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
+                  />
+                  <button className="p-3 bg-[var(--surface2)] border border-[var(--border)] rounded-xl hover:border-[var(--accent)] transition-colors btn-tap" title="Scan with AI"><Camera className="w-5 h-5 text-[var(--muted)]" /></button>
+                </div>
               )}
             </div>
           ))}
