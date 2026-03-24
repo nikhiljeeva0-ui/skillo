@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Skillo: The AI Learning Engine 🚀
 
-## Getting Started
+Skillo is a next-generation AI Tutor and Assignment grading ecosystem designed for students, teachers, and institutions. 
 
-First, run the development server:
+Unlike standard AI chatbots, Skillo features a **Persistence Knowledge Graph (Brain Map)** that grows with every interaction, creating a hyper-personalized learning path for every child.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🌟 Key Features:
+- **🧠 Student Brain Map**: Visualization of concepts mastered and weak areas.
+- **📸 AI Vision Grading**: Scan handwritten work for instant AI feedback.
+- **💬 Memory-Aware Tutor**: A chat interface that remembers yours past sessions.
+- **📊 Teacher Insights**: Full dashboard for tracking class progress and creating assignments.
+- **🛡️ Admin HQ**: High-level platform monitoring and institution management.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 One-Click Deploy
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fnikhiljeeva0-ui%2Fskillo&env=GEMINI_API_KEY,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY&project-name=skillo-startup&repository-name=skillo)
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 🛠️ Local Setup
+1. Clone the repo: `git clone https://github.com/nikhiljeeva0-ui/skillo.git`
+2. Install deps: `npm install`
+3. Setup `.env.local` with your Gemini & Supabase keys.
+4. Run: `npm run dev`
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+---
+*Built for the future of education.* 📚
