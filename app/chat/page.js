@@ -65,40 +65,36 @@ export default function Chat() {
     // Memory-aware welcome
     const modelStr = localStorage.getItem("skillo_learner_model");
     let initialMsg = isHi
-      ? `नमस्ते ${name}! मैं Skillo हूँ। आज से हम साथ पढ़ेंगे! आज क्या पढ़ना है? 😊`
-      : `Namaste ${name}! I'm Skillo. Let's start your learning journey! What shall we study today? 😊`;
+      ? `नमस्ते ${name}! मैं Skillo हूँ। आज हम क्या पढ़ेंगे? 😊`
+      : `Namaste ${name}! I'm Skillo. What shall we study today? 😊`;
     let streak = 0;
 
     if (modelStr) {
       try {
         const model = JSON.parse(modelStr);
-        const sessions = model.sessionStats?.totalSessions || 0;
         streak = model.sessionStats?.streakDays || 0;
         const lastSeen = model.sessionStats?.lastSeen;
         const topics = model.subjects?.maths?.topics || {};
-        const shakyTopics = Object.entries(topics).filter(([_,v]) => v.status === 'shaky').map(([k]) => k);
+        const shakyTopics = Object.entries(topics).filter(([_,v]) => v.status === 'shaky').map(([k]) => k.replace(/_/g, ' '));
         const daysSince = lastSeen ? Math.floor((new Date() - new Date(lastSeen)) / (1000*60*60*24)) : null;
 
-        if (sessions === 0) {
-          initialMsg = isHi ? `नमस्ते ${name}! मैं Skillo हूँ। आज से हम साथ पढ़ेंगे! आज क्या पढ़ना है? 😊` : `Namaste ${name}! I'm Skillo. Let's start your learning journey! What shall we study today? 😊`;
-        } else if (daysSince > 2) {
-          initialMsg = isHi
-            ? `वापस आए ${name}! ${daysSince} दिन बाद! ${shakyTopics.length > 0 ? `पिछली बार ${shakyTopics[0]} में थोड़ी problem थी। आज उसे fix करें? 💪` : 'आज क्या पढ़ना है?'}`
-            : `Welcome back ${name}! ${daysSince} days later! ${shakyTopics.length > 0 ? `Last time you struggled with ${shakyTopics[0]}. Want to fix that today? 💪` : 'What shall we study today?'}`;
+        if (shakyTopics.length > 0) {
+          initialMsg = isHi 
+            ? `वापस आए ${name}! 🚀 ${shakyTopics[0]} में थोड़ी और practice चाहिए थी। क्या आज उसे clear करें?` 
+            : `Welcome back ${name}! 🚀 You were a bit shaky on ${shakyTopics[0]} last time. Shall we clear that up today?`;
         } else if (streak >= 3) {
-          initialMsg = isHi ? `शाबाश ${name}! 🔥 ${streak} दिन streak! आज क्या पढ़ना है?` : `Amazing ${name}! 🔥 ${streak} day streak! What shall we study today?`;
-        } else if (sessions > 0) {
-          initialMsg = isHi
-            ? `नमस्ते ${name}! ${shakyTopics.length > 0 ? `आज ${shakyTopics[0]} practice करें? 📚` : 'आज क्या पढ़ना है? 😊'}`
-            : `Namaste ${name}! ${shakyTopics.length > 0 ? `Shall we practice ${shakyTopics[0]} today? 📚` : 'What shall we study today? 😊'}`;
+          initialMsg = isHi 
+            ? `गजब ${name}! 🔥 ${streak} दिन की streak! आज क्या नया सीखना है?` 
+            : `Amazing ${name}! 🔥 ${streak} day streak! What new concept shall we tackle today?`;
         }
 
         const { getTopicsForToday } = require("@/lib/spacedRepetition");
         const reviewTopics = getTopicsForToday(model);
         if (reviewTopics.length > 0) {
+          const revList = reviewTopics.map(t => t.replace(/_/g, ' ')).join(", ");
           initialMsg += isHi
-            ? `\n\n📚 आज review: ${reviewTopics.join(", ")}`
-            : `\n\n📚 Review today: ${reviewTopics.join(", ")}`;
+            ? `\n\n📚 और हाँ, Skillo ने आज इन topics का review schedule किया है: ${revList}`
+            : `\n\n📚 Also, I've scheduled these for review today: ${revList}`;
         }
       } catch(e) { console.error("Memory error:", e); }
     }
@@ -147,7 +143,7 @@ export default function Chat() {
   const formatTime = (d) => { if (!d) return ''; const t = new Date(d); return t.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); };
 
   // Suggested topics for empty chat
-  const suggestedTopics = ["Triangles", "Polynomials", "Probability", "Linear Equations"];
+  const suggestedTopics = ["Quadratic Equations", "Triangle Properties", "Probability Basics", "Real Numbers"];
 
   if (pageLoading) return <Loading />;
 
@@ -155,7 +151,7 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-[100dvh] bg-[var(--bg)] max-w-2xl mx-auto border-x border-[var(--border)] relative overflow-hidden">
       {/* Header */}
-      <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center justify-between z-10 sticky top-0">
+      <header className="bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center justify-between z-10 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)] flex items-center justify-center text-[var(--bg)] font-extrabold text-lg shadow-lg" style={{fontFamily:"var(--font-heading)"}}>S</div>
           <div>
@@ -163,15 +159,15 @@ export default function Chat() {
             <p className="text-[10px] text-[var(--green)] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[var(--green)]"></span>Online</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {studentInfo.streak > 0 && (
-            <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--accent)] flex items-center gap-1">🔥 {studentInfo.streak}</div>
+            <div className="bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-2 py-1 rounded-lg text-[10px] font-bold text-[var(--accent)] hidden sm:flex items-center gap-1">🔥 {studentInfo.streak}</div>
           )}
-          <button onClick={() => window.open("/report","_blank")} className="text-xs bg-[var(--surface2)] px-2.5 py-1.5 rounded-lg text-[var(--muted)] border border-[var(--border)] hover:text-[var(--text)] transition-colors">📋 Report</button>
-          <div className="text-right hidden sm:block">
-            <p className="text-xs font-semibold text-[var(--accent)]">{studentInfo.name}</p>
-            <p className="text-[10px] text-[var(--muted)]">Class {studentInfo.grade}</p>
-          </div>
+          <button onClick={() => router.push("/memory")} className="group flex items-center gap-1.5 bg-[var(--surface2)] px-3 py-1.5 rounded-xl border border-[var(--border)] hover:border-[var(--accent)] transition-all">
+            <Brain className="w-4 h-4 text-[var(--accent)] group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-bold text-[var(--muted)] group-hover:text-[var(--text)] uppercase tracking-wider">Brain Map</span>
+          </button>
+          <button onClick={() => window.open("/report","_blank")} className="p-2 text-[var(--muted)] hover:text-[var(--text)] transition-colors"><TrendingUp className="w-5 h-5" /></button>
         </div>
       </header>
 

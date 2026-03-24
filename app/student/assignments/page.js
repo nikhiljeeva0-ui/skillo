@@ -100,7 +100,10 @@ export default function StudentAssignments() {
           <button onClick={() => router.push("/chat")} className="p-2 bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:bg-[var(--surface2)] transition">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-extrabold" style={{fontFamily:"var(--font-heading)"}}>My Assignments 📚</h1>
+          <div className="text-center">
+            <h1 className="text-xl font-extrabold" style={{fontFamily:"var(--font-heading)"}}>My Assignments 📚</h1>
+            <button onClick={() => router.push("/memory")} className="text-[10px] text-[var(--accent)] font-bold uppercase tracking-wider flex items-center gap-1 mt-1"><Brain className="w-3.5 h-3.5" /> View Brain Map</button>
+          </div>
           <div className="w-9" />
         </header>
 

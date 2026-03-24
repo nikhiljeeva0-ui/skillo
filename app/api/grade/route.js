@@ -27,6 +27,20 @@ export async function POST(req) {
       return Response.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
+    // Fetch learner model for memory-aware grading
+    const { data: learnerData } = await supabase
+      .from('learner_models')
+      .select('model_json')
+      .eq('user_id', userId || 'student_001')
+      .single();
+
+    const learnerModel = learnerData?.model_json || null;
+    const shakyTopics = learnerModel?.subjects?.[assignment.subject]?.topics 
+      ? Object.entries(learnerModel.subjects[assignment.subject].topics)
+          .filter(([_, v]) => v.status === 'shaky')
+          .map(([k]) => k.replace(/_/g, ' '))
+      : [];
+
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash",
@@ -45,6 +59,11 @@ export async function POST(req) {
 
       const gradingPrompt = `
 You are a strict but fair teacher grading a student answer.
+You have memory of the student's past performance to give personalized feedback.
+
+Student Name: ${learnerModel?.profile?.name || 'Student'}
+Student's Weak Areas: ${shakyTopics.join(", ") || "None yet"}
+Learning Strategy: ${JSON.stringify(learnerModel?.learningStyle || {})}
 
 Question: ${question.text}
 Correct Answer: ${question.answerKey}
@@ -55,9 +74,9 @@ Grade this answer and respond in JSON only:
 {
   "marks_awarded": number,
   "is_correct": true or false,
-  "feedback": "specific feedback in simple Hindi or English",
+  "feedback": "specific feedback in simple Hindi or English. Mention if they are making the same mistake as in their weak areas if applicable.",
   "explanation": "why correct answer is right",
-  "improvement_tip": "how student can improve"
+  "improvement_tip": "how student can improve, tailored to their learning style"
 }
 
 Be encouraging but honest.
