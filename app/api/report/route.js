@@ -1,6 +1,8 @@
 import { getLearnerModel } from "@/lib/learnerModel";
 import { buildReport } from "@/lib/reportBuilder";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);

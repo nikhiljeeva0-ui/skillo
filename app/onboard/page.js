@@ -36,7 +36,7 @@ export default function OnboardChat() {
     if (current?.type === "text" && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 400);
     }
-  }, [stepIndex]);
+  }, [stepIndex, current?.type]);
 
   const advance = (val) => {
     if (transitioning) return;

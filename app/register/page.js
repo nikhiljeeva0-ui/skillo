@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { supabase } from "@/lib/learnerModel";
@@ -38,13 +38,7 @@ export default function RegisterInstitution() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  useEffect(() => {
-    if (stepIndex === 0 && messages.length === 0) {
-      appendBotMessage(steps[0].text);
-    }
-  }, []);
-
-  const appendBotMessage = (textTemplate) => {
+  const appendBotMessage = useCallback((textTemplate) => {
     setIsTyping(true);
     setTimeout(() => {
       const text = typeof textTemplate === "function" ? textTemplate(answers) : textTemplate;
@@ -55,7 +49,13 @@ export default function RegisterInstitution() {
         finishRegistration(answers);
       }
     }, BOT_DELAY);
-  };
+  }, [answers, stepIndex, steps]);
+
+  useEffect(() => {
+    if (stepIndex === 0 && messages.length === 0) {
+      appendBotMessage(steps[0].text);
+    }
+  }, [appendBotMessage, messages.length, stepIndex, steps]);
 
   const handleAnswer = (val) => {
     if (!val.trim()) return;

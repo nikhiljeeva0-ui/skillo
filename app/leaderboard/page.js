@@ -15,14 +15,17 @@ export default function LeaderboardPage() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState("all");
-  const currentUserId = typeof window !== 'undefined' ? localStorage.getItem("skillo_user_id") || "student_001" : "student_001";
-
+  const [currentUserId, setCurrentUserId] = useState("student_001");
   useEffect(() => {
+    const userId = typeof window !== 'undefined' ? localStorage.getItem("skillo_user_id") || "student_001" : "student_001";
+    setCurrentUserId(userId);
+
     async function load() {
       let dbStudents = [];
       if (supabase) {
         try {
-          const { data: pts } = await supabase.from("student_points").select("*").order("total_points", { ascending: false }).limit(20);
+          const col = timeFilter === "week" ? "weekly_points" : timeFilter === "month" ? "monthly_points" : "total_points";
+          const { data: pts } = await supabase.from("student_points").select(`user_id, ${col}, streak_days, badges`).order(col, { ascending: false }).limit(20);
           if (pts && pts.length > 0) {
             const ids = pts.map(p => p.user_id);
             const { data: models } = await supabase.from("learner_models").select("user_id, model_json").in("user_id", ids);
@@ -34,7 +37,7 @@ export default function LeaderboardPage() {
               rank: i+1, userId: p.user_id,
               name: nm[p.user_id]?.name || p.user_id,
               grade: nm[p.user_id]?.grade || "?",
-              points: p.total_points || 0,
+              points: p[col] || 0,
               streak: p.streak_days || 0,
               badges: p.badges || []
             }));
@@ -54,7 +57,7 @@ export default function LeaderboardPage() {
           { rank: 2, userId: "demo_2", name: "Priya Sharma", grade: "9", points: 285, streak: 8, badges: [] },
           { rank: 3, userId: "demo_3", name: "Rahul Kumar", grade: "10", points: 220, streak: 5, badges: [] },
           { rank: 4, userId: "demo_4", name: "Ananya Patel", grade: "9", points: 195, streak: 6, badges: [] },
-          { rank: 5, userId: currentUserId, name: myName, grade: myGrade, points: myPts, streak: myStrk, badges: [] },
+          { rank: 5, userId: userId, name: myName, grade: myGrade, points: myPts, streak: myStrk, badges: [] },
           { rank: 6, userId: "demo_5", name: "Vikram Joshi", grade: "11", points: 150, streak: 3, badges: [] },
           { rank: 7, userId: "demo_6", name: "Sneha Reddy", grade: "10", points: 130, streak: 4, badges: [] },
           { rank: 8, userId: "demo_7", name: "Arjun Nair", grade: "9", points: 110, streak: 2, badges: [] },
@@ -68,7 +71,7 @@ export default function LeaderboardPage() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [timeFilter]);
 
   const getBadgeIcons = (s) => {
     const b = [];

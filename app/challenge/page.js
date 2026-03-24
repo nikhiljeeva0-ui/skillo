@@ -6,6 +6,23 @@ import { ArrowLeft, Clock, CheckCircle, XCircle, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/Loading";
 
+const localChallenges = [
+  { subject: "maths", question: "What is the sum of angles in a triangle?", correct_answer: "180", explanation: "The sum of interior angles of any triangle is always 180°. This is a fundamental property of Euclidean geometry.", points: 10 },
+  { subject: "maths", question: "If x + 5 = 12, what is x?", correct_answer: "7", explanation: "Subtract 5 from both sides: x = 12 - 5 = 7.", points: 10 },
+  { subject: "science", question: "What is the chemical formula for water?", correct_answer: "H2O", explanation: "Water is made up of 2 hydrogen atoms and 1 oxygen atom, hence H₂O.", points: 10 },
+  { subject: "maths", question: "What is 15% of 200?", correct_answer: "30", explanation: "15% of 200 = (15/100) × 200 = 30.", points: 10 },
+  { subject: "maths", question: "What is the square root of 144?", correct_answer: "12", explanation: "12 × 12 = 144, so √144 = 12.", points: 10 },
+  { subject: "science", question: "Which gas do plants absorb from the atmosphere?", correct_answer: "Carbon dioxide", explanation: "Plants absorb CO₂ (carbon dioxide) during photosynthesis and release oxygen.", points: 10 },
+  { subject: "maths", question: "Simplify: 3x + 2x", correct_answer: "5x", explanation: "Since both terms have the same variable x, add the coefficients: 3 + 2 = 5, so 3x + 2x = 5x.", points: 10 },
+  { subject: "maths", question: "What is the area of a rectangle with length 8cm and breadth 5cm?", correct_answer: "40", explanation: "Area of rectangle = length × breadth = 8 × 5 = 40 cm².", points: 10 },
+  { subject: "science", question: "What is the SI unit of force?", correct_answer: "Newton", explanation: "The SI unit of force is the Newton (N), named after Sir Isaac Newton.", points: 10 },
+  { subject: "maths", question: "What is the value of π (pi) rounded to 2 decimal places?", correct_answer: "3.14", explanation: "π (pi) is approximately 3.14159... Rounded to 2 decimal places, it is 3.14.", points: 10 },
+  { subject: "maths", question: "If a triangle has sides 3, 4, and 5, what type of triangle is it?", correct_answer: "Right triangle", explanation: "Since 3² + 4² = 9 + 16 = 25 = 5², it satisfies the Pythagorean theorem, making it a right-angled triangle.", points: 10 },
+  { subject: "science", question: "What is the powerhouse of the cell?", correct_answer: "Mitochondria", explanation: "Mitochondria are called the powerhouse of the cell because they generate most of the cell's ATP (energy).", points: 10 },
+  { subject: "maths", question: "What is the next prime number after 7?", correct_answer: "11", explanation: "After 7, the numbers 8, 9, and 10 are all composite. 11 is only divisible by 1 and itself, so it's prime.", points: 10 },
+  { subject: "maths", question: "What is the LCM of 4 and 6?", correct_answer: "12", explanation: "Multiples of 4: 4, 8, 12... Multiples of 6: 6, 12... The least common multiple is 12.", points: 10 },
+];
+
 export default function ChallengePage() {
   const router = useRouter();
   const [challenge, setChallenge] = useState(null);
@@ -19,22 +36,6 @@ export default function ChallengePage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const timerRef = useRef(null);
 
-  const localChallenges = [
-    { subject: "maths", question: "What is the sum of angles in a triangle?", correct_answer: "180", explanation: "The sum of interior angles of any triangle is always 180°. This is a fundamental property of Euclidean geometry.", points: 10 },
-    { subject: "maths", question: "If x + 5 = 12, what is x?", correct_answer: "7", explanation: "Subtract 5 from both sides: x = 12 - 5 = 7.", points: 10 },
-    { subject: "science", question: "What is the chemical formula for water?", correct_answer: "H2O", explanation: "Water is made up of 2 hydrogen atoms and 1 oxygen atom, hence H₂O.", points: 10 },
-    { subject: "maths", question: "What is 15% of 200?", correct_answer: "30", explanation: "15% of 200 = (15/100) × 200 = 30.", points: 10 },
-    { subject: "maths", question: "What is the square root of 144?", correct_answer: "12", explanation: "12 × 12 = 144, so √144 = 12.", points: 10 },
-    { subject: "science", question: "Which gas do plants absorb from the atmosphere?", correct_answer: "Carbon dioxide", explanation: "Plants absorb CO₂ (carbon dioxide) during photosynthesis and release oxygen.", points: 10 },
-    { subject: "maths", question: "Simplify: 3x + 2x", correct_answer: "5x", explanation: "Since both terms have the same variable x, add the coefficients: 3 + 2 = 5, so 3x + 2x = 5x.", points: 10 },
-    { subject: "maths", question: "What is the area of a rectangle with length 8cm and breadth 5cm?", correct_answer: "40", explanation: "Area of rectangle = length × breadth = 8 × 5 = 40 cm².", points: 10 },
-    { subject: "science", question: "What is the SI unit of force?", correct_answer: "Newton", explanation: "The SI unit of force is the Newton (N), named after Sir Isaac Newton.", points: 10 },
-    { subject: "maths", question: "What is the value of π (pi) rounded to 2 decimal places?", correct_answer: "3.14", explanation: "π (pi) is approximately 3.14159... Rounded to 2 decimal places, it is 3.14.", points: 10 },
-    { subject: "maths", question: "If a triangle has sides 3, 4, and 5, what type of triangle is it?", correct_answer: "Right triangle", explanation: "Since 3² + 4² = 9 + 16 = 25 = 5², it satisfies the Pythagorean theorem, making it a right-angled triangle.", points: 10 },
-    { subject: "science", question: "What is the powerhouse of the cell?", correct_answer: "Mitochondria", explanation: "Mitochondria are called the powerhouse of the cell because they generate most of the cell's ATP (energy).", points: 10 },
-    { subject: "maths", question: "What is the next prime number after 7?", correct_answer: "11", explanation: "After 7, the numbers 8, 9, and 10 are all composite. 11 is only divisible by 1 and itself, so it's prime.", points: 10 },
-    { subject: "maths", question: "What is the LCM of 4 and 6?", correct_answer: "12", explanation: "Multiples of 4: 4, 8, 12... Multiples of 6: 6, 12... The least common multiple is 12.", points: 10 },
-  ];
 
   useEffect(() => {
     async function load() {
@@ -114,6 +115,8 @@ export default function ChallengePage() {
 
           await supabase.from("student_points").update({
             total_points: (existing.total_points||0) + earned,
+            weekly_points: (existing.weekly_points||0) + earned,
+            monthly_points: (existing.monthly_points||0) + earned,
             streak_days: newStreak,
             last_challenge: today
           }).eq("user_id", userId);
@@ -121,7 +124,7 @@ export default function ChallengePage() {
           setStreak(newStreak);
           saved = true;
         } else {
-          await supabase.from("student_points").insert({ user_id: userId, total_points: earned, streak_days: 1, last_challenge: new Date().toISOString().split('T')[0], badges: [] });
+          await supabase.from("student_points").insert({ user_id: userId, total_points: earned, weekly_points: earned, monthly_points: earned, streak_days: 1, last_challenge: new Date().toISOString().split('T')[0], badges: [] });
           setPoints(earned); setStreak(1);
           saved = true;
         }
