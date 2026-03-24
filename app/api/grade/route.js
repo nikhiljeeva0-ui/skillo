@@ -57,8 +57,8 @@ export async function POST(req) {
       const studentAnswer = answers[i] || '';
       totalMax += question.maxMarks || 10;
 
-      const gradingPrompt = `
-You are a strict but fair teacher grading a student answer.
+      let promptContent = [
+        `You are a strict but fair teacher grading a student answer.
 You have memory of the student's past performance to give personalized feedback.
 
 Student Name: ${learnerModel?.profile?.name || 'Student'}
@@ -67,10 +67,10 @@ Learning Strategy: ${JSON.stringify(learnerModel?.learningStyle || {})}
 
 Question: ${question.text}
 Correct Answer: ${question.answerKey}
-Student Answer: ${studentAnswer}
 Max Marks: ${question.maxMarks || 10}
 
-Grade this answer and respond in JSON only:
+Grade the answer provided. If it's an image, transcribe and then grade it.
+Respond in JSON only:
 {
   "marks_awarded": number,
   "is_correct": true or false,
@@ -81,10 +81,23 @@ Grade this answer and respond in JSON only:
 
 Be encouraging but honest.
 If partially correct, give partial marks.
-If student answer is empty or blank, give 0 marks.`;
+If student answer is empty or blank, give 0 marks.`
+      ];
+
+      if (typeof studentAnswer === 'object' && studentAnswer.type === 'image') {
+        promptContent.push({
+          inlineData: {
+            data: studentAnswer.data,
+            mimeType: studentAnswer.mimeType
+          }
+        });
+        promptContent[0] += "\n\nStudent Answer is provided as an image below. Please read the handwritten or typed text in the image carefully.";
+      } else {
+        promptContent[0] += `\n\nStudent Answer: ${studentAnswer}`;
+      }
 
       try {
-        const result = await model.generateContent(gradingPrompt);
+        const result = await model.generateContent(promptContent);
         const responseText = result.response.text();
         const parsed = JSON.parse(responseText);
         totalScore += parsed.marks_awarded || 0;

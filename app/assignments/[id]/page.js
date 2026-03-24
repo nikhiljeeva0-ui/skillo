@@ -54,8 +54,24 @@ export default function AssignmentSubmit() {
     setAnswers(updated);
   };
 
+  const handleImageUpload = (idx, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setSubmitting(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result.split(',')[1];
+      const updated = [...answers];
+      updated[idx] = { type: 'image', data: base64, mimeType: file.type };
+      setAnswers(updated);
+      setSubmitting(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async () => {
-    if (answers.every(a => !a.trim())) {
+    if (answers.every(a => typeof a === 'string' ? !a.trim() : !a)) {
       alert("Please answer at least one question.");
       return;
     }
@@ -69,7 +85,7 @@ export default function AssignmentSubmit() {
         body: JSON.stringify({
           assignmentId,
           userId,
-          answers
+          answers // Now contains mixed text and {type: 'image', data: '...', mimeType: '...'}
         })
       });
 
@@ -258,11 +274,25 @@ export default function AssignmentSubmit() {
               ) : q.type === "Long Answer" ? (
                 <div className="space-y-4">
                   <div className="flex gap-2 mb-2">
-                    <button className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface2)] border border-[var(--border)] py-2.5 rounded-xl text-xs font-semibold hover:border-[var(--accent)] transition-all btn-tap"><Camera className="w-4 h-4" /> Camera Scan</button>
-                    <button className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface2)] border border-[var(--border)] py-2.5 rounded-xl text-xs font-semibold hover:border-[var(--accent)] transition-all btn-tap"><ImageIcon className="w-4 h-4" /> Upload Image</button>
+                    <input type="file" accept="image/*" capture="environment" id={`cam_${idx}`} className="hidden" onChange={(e) => handleImageUpload(idx, e)} />
+                    <button onClick={() => document.getElementById(`cam_${idx}`).click()} className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface2)] border border-[var(--border)] py-2.5 rounded-xl text-xs font-semibold hover:border-[var(--accent)] transition-all btn-tap"><Camera className="w-4 h-4" /> Camera Scan</button>
+                    
+                    <input type="file" accept="image/*" id={`up_${idx}`} className="hidden" onChange={(e) => handleImageUpload(idx, e)} />
+                    <button onClick={() => document.getElementById(`up_${idx}`).click()} className="flex-1 flex items-center justify-center gap-2 bg-[var(--surface2)] border border-[var(--border)] py-2.5 rounded-xl text-xs font-semibold hover:border-[var(--accent)] transition-all btn-tap"><ImageIcon className="w-4 h-4" /> Upload Image</button>
                   </div>
+                  
+                  {answers[idx]?.type === 'image' && (
+                    <div className="bg-[var(--accent)]/5 border border-[var(--accent)]/20 rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                         <ImageIcon className="w-4 h-4 text-[var(--accent)]" />
+                         <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-wide">Image Captured! AI will auto-read it.</span>
+                      </div>
+                      <button onClick={() => updateAnswer(idx, '')} className="text-red-400 text-[10px] font-bold">Remove</button>
+                    </div>
+                  )}
+
                   <textarea
-                    value={answers[idx] || ""}
+                    value={typeof answers[idx] === 'string' ? (answers[idx] || "") : ""}
                     onChange={(e) => updateAnswer(idx, e.target.value)}
                     placeholder="Write your answer here or scan above..."
                     rows={4}
@@ -270,15 +300,27 @@ export default function AssignmentSubmit() {
                   />
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={answers[idx] || ""}
-                    onChange={(e) => updateAnswer(idx, e.target.value)}
-                    placeholder="Type your answer..."
-                    className="flex-1 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
-                  />
-                  <button className="p-3 bg-[var(--surface2)] border border-[var(--border)] rounded-xl hover:border-[var(--accent)] transition-colors btn-tap" title="Scan with AI"><Camera className="w-5 h-5 text-[var(--muted)]" /></button>
+                <div className="flex flex-col gap-3">
+                  {answers[idx]?.type === 'image' && (
+                    <div className="bg-[var(--accent)]/5 border border-[var(--accent)]/20 rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                         <ImageIcon className="w-4 h-4 text-[var(--accent)]" />
+                         <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-wide">Image Attached</span>
+                      </div>
+                      <button onClick={() => updateAnswer(idx, '')} className="text-red-400 text-[10px] font-bold">Remove</button>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={typeof answers[idx] === 'string' ? (answers[idx] || "") : ""}
+                      onChange={(e) => updateAnswer(idx, e.target.value)}
+                      placeholder="Type your answer..."
+                      className="flex-1 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] placeholder:text-[var(--muted)]"
+                    />
+                    <input type="file" accept="image/*" capture="environment" id={`cam_s_${idx}`} className="hidden" onChange={(e) => handleImageUpload(idx, e)} />
+                    <button onClick={() => document.getElementById(`cam_s_${idx}`).click()} className="p-3 bg-[var(--surface2)] border border-[var(--border)] rounded-xl hover:border-[var(--accent)] transition-colors btn-tap" title="Scan with AI"><Camera className="w-5 h-5 text-[var(--muted)]" /></button>
+                  </div>
                 </div>
               )}
             </div>
